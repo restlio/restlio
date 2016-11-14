@@ -1,0 +1,59 @@
+{% extends '../../layout.html' %}
+
+{% block title %}New {{ opts.singular|title }}{% endblock %}
+
+{% block head %}
+    {% parent %}
+    <!-- use custom css, js here, if you want -->
+{% endblock %}
+
+{% block content %}
+<body>
+	<!-- Main container -->
+	<div class="wrapper">
+
+		{% include "./header.html" %}
+		{% include "../../partial/navigation.html" %}
+
+		<div class="content">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="bp-form__container">
+                        {% include "partial/form/errors.html" %}
+
+                        <div class="ibox float-e-margins">
+                            {#
+                            <div class="ibox-title">
+                                <h5>
+                                    {% if action == 'save' %}New{% endif %}
+                                    {% if action == 'update' %}Edit{% endif %}
+                                    {{ opts.singular|title }}
+                                </h5>
+                            </div>
+                            #}
+                            <div class="ibox-content">
+                                {% if form %}
+                                    <form action="/admin/o/{{ object }}/{{ action }}{% if id %}/{{ id }}{% endif %}" method="post" role="form">
+                                        {% autoescape false %}{{ form }}{% endautoescape %}
+                                        {% include "partial/form/button.html" %}
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+		</div>
+        
+	</div>
+	<!-- /view -->
+	
+	{% include "../../partial/footer.html" %}
+
+	<script>
+		mlMenu.init('menu-{{ appName }}');
+	</script>
+</body>
+
+{% endblock %}
+

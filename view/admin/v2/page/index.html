@@ -1,0 +1,105 @@
+{% extends '../layout.html' %}
+
+{% block title %}Administration{% endblock %}
+
+{% block head %}
+    {% parent %}
+{% endblock %}
+
+{% block content %}
+<body>
+	<!-- Main container -->
+	<div class="wrapper">
+		{% include "../partial/header.html" %}
+		{% include "../partial/navigation.html" %}
+
+		<div class="content bp-page__index" style="">
+			{% if ! session.app %}
+			<p class="info">Please choose an application</p>
+			{% endif %}
+
+			{% if session.app %}
+				<div class="container-fluid">
+					{% for key, val in session.resources %}
+						{% if key == session.app.slug %}
+							{% for k, v in val %}
+								<div class="row bp-class__row" style="margin-top:30px">
+									<div class="col-md-2" style="text-align:center;">
+										<div class="console" style="">{{k|l_capitalize}}</div>
+										<div class="bp-ui__statistic">
+											{% if counts[k] %}
+											<div class="ui small statistic console">
+												<div class="value">{{counts[k].count}}</div>
+												<div class="label">Records</div>
+											</div>
+											{% endif %}
+										</div>
+									</div>
+									
+									<div class="col-md-6">
+										<div class="bp-class__canvas">
+											<canvas id="canvas-{{k}}" height="120" width="750"></canvas>
+										</div>
+										
+										{% if graphs[k] %}
+											<script>
+												var color  = Chart.helpers.color;
+												var labels = [];
+												var data   = [];
+														
+												{% for gr in graphs[k] %}
+													labels.push('{{gr._id|dateFormat('DD/MM/YYYY')}}');
+													data.push({{gr.count}});
+												{% endfor %}
+
+												(function(k, config) {
+													$(function() {
+														var ctx = document.getElementById('canvas-'+k).getContext("2d");
+														new Chart(ctx, config);
+													});
+												})('{{k}}', chartConfig(labels, data));
+											</script>
+										{% endif %}
+									</div>
+
+									<div class="col-md-2" style="text-align:center;">
+										<a class="btn btn-primary btn-xs console" href="/admin/o/{{key}}.{{k}}">
+											<i class="fa fa-arrow-right"></i> go
+										</a>
+										<a class="btn btn-primary btn-xs console" href="/admin/o/{{key}}.{{k}}/new">
+											<i class="fa fa-plus"></i> new
+										</a>
+									</div>
+
+								</div>
+							{% endfor %}
+						{% endif %}
+					{% endfor %}
+				</div>
+
+				<script>
+					$(function() {
+						setTimeout(function() {
+							$('.bp-class__row').css('visibility', 'visible');
+							$('.content').removeClass('content--loading');
+						}, 200);
+					});	
+				</script>
+			{% endif %}
+		</div>
+	</div>
+	<!-- /view -->
+	
+	{% include "../partial/footer.html" %}
+
+	<script>
+		{% if session.app %}
+		mlMenu.init();
+		{% else %}
+		mlMenu.init('menu-applications');
+		{% endif %}
+	</script>
+</body>
+
+{% endblock %}
+

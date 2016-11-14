@@ -1,0 +1,78 @@
+<nav id="ml-menu" class="menu">
+    <button class="action action--close" aria-label="Close Menu"><span class="icon icon--cross"></span></button>
+    <div class="menu__wrap">
+        
+        <!-- Main Menu -->
+        <ul data-menu="main" class="menu__level">
+            <li class="menu__item">
+                <a class="menu__link {% if page == 'dashboard' %}menu__link--current{% endif %}" href="/admin">Dashboard</a>
+            </li>
+
+            <!-- set application first --> 
+            {% for key, val in session.resources %}
+                {% if key == session.app.slug %}
+                    <li class="menu__item">
+                        <a class="menu__link" data-submenu="menu-{{ key }}" href="#">{{ key|title }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            <!-- Applications Menu Item -->
+            <li class="menu__item">
+                <a class="menu__link" data-submenu="menu-applications" href="#">Apps</a>
+            </li>
+
+            {% if session.app %}
+                {% for key, val in session.resources %}
+                    {% if key == "feed" || key == "system" || key == 'oauth' %}
+                        <li class="menu__item">
+                            <a class="menu__link" data-submenu="menu-{{ key }}" href="#">{{ key|title }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+
+            <li class="menu__item">
+                <a class="menu__link" href="/admin/logout"><i class="fa fa-sign-out"></i> Logout</a>
+            </li>
+        </ul>
+
+        <!-- Applications Submenu --> 
+        <ul data-menu="menu-applications" class="menu__level">
+            {% for key, val in session.apps %}
+                {% if val.slug != "system" %}
+                    <li class="menu__item">
+                        <a class="menu__link" href="/admin/app/{{ key }}">{{ val.long }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+
+        <!-- Submenus -->
+        {% if session.app %}
+            {% set appName = '' %}
+            {% set objName = '' %}
+
+            {% if segments[3] %}
+                {% set app = segments[3]|split(".") %}
+
+                {% if app[1] %}
+                    {% set appName = app[0] %}
+                    {% set objName = app[1] %}
+                {% endif %}
+            {% endif %}
+
+            {% for key, val in session.resources %}
+                {% if key == "feed" || key == "system" || key == 'oauth' || key == session.app.slug %}
+                    <ul data-menu="menu-{{ key }}" class="menu__level">
+                        {% for k, v in val %}
+                            {% if k != "apps" %}
+                                <li class="menu__item"><a class="menu__link {% if k == objName %}menu__link--current{% endif %}" href="/admin/o/{{ key }}.{{ k }}">{{ k|capitalize }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            {% endfor %}
+        {% endif %}    
+    </div>
+</nav>

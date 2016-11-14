@@ -1,0 +1,25 @@
+{% import '../../macro/depends.html' as m_depends %}
+
+{% set inputName = key %}
+
+{% if parent.field %}
+    {% set inputName = parent.field+'['+parent.index+']['+key+']' %}
+{% endif %}
+
+<div id="field-{{ field.alias }}{{ parent.index }}" class="f-textarea form-group">
+    <label for="f-{{ key }}{{ parent.index }}">{{ field.settings.label }}</label>
+    <div class="f-textarea-wrap">
+        <textarea name="{{ inputName }}" id="f-{{ key }}{{ parent.index }}" class="form-control {% if opts.filter %}input-sm{% endif %}" rows="{{ field.settings.rows|default(8) }}">{% if data %}{{data}}{% endif %}</textarea>
+        {% include "../filter/text.html" %}
+    </div>
+</div>
+
+<script>
+$(function() {
+    {% if opts.filter %}
+        setFilter(Filter, '{{ key }}', '{{ field.alias }}', 'textarea');
+    {% else %}
+        {{ m_depends.depends(field.depends, field.alias) }}
+    {% endif %}
+});
+</script>

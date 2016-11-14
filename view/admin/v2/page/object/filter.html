@@ -1,0 +1,34 @@
+<div>
+    <script>
+        var Filter = {};
+    </script>
+
+    <div class="ibox float-e-margins">
+        <div class="bp-filter__title ibox-title">
+            <div class="btn-group">
+                <button class="btn btn-primary btn-outline btn-xs dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="false">
+                    <span id="filter-title">filter</span> <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu" role="menu">
+                    {% for f in filters %}
+                        <li><a href="javascript:void(0);" onclick="loadFilter('{{ f._id.toString() }}', '{{ f.name }}');">{{ f.name }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <button class="bp-filter__save btn btn-primary btn-outline btn-xs" type="button" onclick="saveFilterForm();">save</button>
+            <div class="clearfix"></div>
+        </div>
+        <div class="bp-filter__form ibox-content">
+            {% autoescape false %}{{ sfilter }}{% endautoescape %}
+            <div class="form-group" align="center">
+                <button class="btn btn-primary btn-outline btn-block btn-sm" onclick="runFilter();" style="width: 50%">filter</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        #s-filter .ibox .open > .dropdown-menu {
+            left: 0;
+        }
+    </style>
+</div>

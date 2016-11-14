@@ -1,0 +1,32 @@
+<div id="field-{{ field.alias }}" class="f-date form-group">
+    <label for="f-{{ key }}">{{ field.settings.label }}</label>
+    <div class="input-group date f-date-wrap">
+        <span class="input-group-addon">
+            <i class="fa fa-calendar"></i>
+        </span>
+
+        <input
+            type="text"
+            {% if ! (opts.edit && field.settings.noedit) %}name="{{ key }}"{% endif %}
+            id="f-{{ key }}"
+            class="f-{{ key }} form-control"
+            {% if opts.edit && field.settings.noedit %}disabled=""{% endif %}
+            value="{% if data %}{{ data|dateFormat('DD/MM/YYYY') }}{% endif %}">
+    </div>
+</div>
+
+<script>
+$(function() {
+    $('.input-group.date').datepicker({
+        todayBtn: "linked",
+        format: 'dd/mm/yyyy',
+        keyboardNavigation: false,
+        forceParse: false,
+        calendarWeeks: true,
+        autoclose: true
+    });
+});
+</script>
+
+
+

@@ -1,0 +1,19 @@
+{% import '../../macro/depends.html' as m_depends %}
+
+<div id="field-{{ field.alias }}" class="f-number form-group">
+    <label for="f-{{ key }}">{{ field.settings.label }}</label>
+    <div class="f-number-wrap">
+        <input name="{{key}}" id="f-{{ key }}" type="number" class="form-control {% if opts.filter %}input-sm{% endif %}" placeholder="{{ field.settings.label }}" value="{% if data %}{{ data }}{% else %}0{% endif %}" />
+        {% include "../filter/text.html" %}
+    </div>
+</div>
+
+<script>
+$(function() {
+    {% if opts.filter %}
+        setFilter(Filter, '{{ key }}', '{{ field.alias }}', 'number');
+    {% else %}
+        {{ m_depends.depends(field.depends, field.alias) }}
+    {% endif %}
+});
+</script>

@@ -1,0 +1,65 @@
+<!-- Blueprint header -->
+<header class="bp-header cf">
+    <div class="dummy-logo">
+        <div class="dummy-icon foodicon foodicon--grape"></div>
+        <h2 class="dummy-heading">Restlio</h2>
+    </div>
+    <div class="bp-header__main">
+        <span class="bp-header__present">{{ opts.plural|title }}</span>
+        <h1 class="bp-header__title">
+            <ol class="breadcrumb">
+                <li><a href="/admin" class="console"><i class="fa fa-dashboard"></i> Dashboard</a></li>
+
+                {% if session.app && object != 'system.apps' %}
+                <!-- <li><span class="console">{{ session.app.long }}</span></li>-->
+                <li>
+                    <div class="bp-header__dropdown dropdown">
+                        <button class="console btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                            {{ session.app.long }}
+                            <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+                            {% for key, val in session.apps %}
+                                {% if val.slug != "system" && val.slug != session.app.slug %}
+                                    <li><a href="/admin/app/{{ key }}">{{ val.long }}</a></li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </li>
+                {% endif %}
+                
+                <li {% if ! action %}class="active"{% endif %}>
+                    <span class="console">
+                        {% if action %}
+                            {{ opts.plural|title }}
+                        {% else %}
+                            <strong>{{ opts.plural|title }}</strong>
+                        {% endif %}
+                    </span>
+                </li>
+
+                {% if action %}
+                <li class="active">
+                    <span class="console">
+                        <strong>
+                            {% if action == 'save' %}New{% endif %}
+                            {% if action == 'update' %}Edit{% endif %}
+                        </strong>
+                    </span>
+                </li>
+                {% endif %}
+            </ol>
+        </h1>
+        {% if opts.nocreate == false %}
+        <div class="bp-header__action">
+            <a class="btn btn-primary console" href="/admin/o/{{ object }}/new">
+                <i class="fa fa-plus"></i> new
+            </a>
+        </div>
+        {% endif %}
+        <div class="clearfix"></div>
+    </div>
+</header>
+
+<button class="action action--open" aria-label="Open Menu"><span class="icon icon--menu"></span></button>
