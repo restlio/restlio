@@ -56,7 +56,7 @@ function CheckSocial(req, res, next) {
         twitter : 'https://api.twitter.com/1.1/account/verify_credentials.json'
     };
 
-    const _headers = {'User-Agent': 'app.io'};
+    const _headers = {'User-Agent': 'Restlio'};
     let endpoint = endpoints[network];
     endpoint     = endpoint.replace(/:access_token/g, token);
 

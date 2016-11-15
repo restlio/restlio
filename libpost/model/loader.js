@@ -88,7 +88,7 @@ class LibpostModelLoader {
         const lower = name.toLowerCase();
         
         // System_Users için işlem yapma 
-        // (app.io modellerinden sadece users modeli event çalıştırıyor, kontrolünü kendi üzerinde sağlıyor)
+        // (Restlio modellerinden sadece users modeli event çalıştırıyor, kontrolünü kendi üzerinde sağlıyor)
         if(name == 'System_Users')
             return false;
 

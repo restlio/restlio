@@ -57,7 +57,7 @@ module.exports = {
         mongo: {
             host: '127.0.0.1',
             port: 27017,
-            db: 'appio_test',
+            db: 'restlio_test',
             pool: 10,
             autoIndex: true,
             debug: false
@@ -98,7 +98,7 @@ module.exports = {
             fileName: 'favicon.ico'
         },
         session: {
-            name: 'appio.sid',
+            name: 'restlio.sid',
             secret: 'dVzxlqhr2tqEfK9kcFNSkB0Gqx9XEs2z',
             cookie: {
                 maxAge: 604800000

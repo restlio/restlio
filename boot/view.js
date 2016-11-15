@@ -88,7 +88,7 @@ module.exports = app => {
     app.engine('html', swig.renderFile);
     app.set('view engine', 'html');
 
-    // set both app view and app.io folders
+    // set both app view and Restlio folders
     app.set('views', [
         `${app.get('basedir')}/${_conf.dir || 'view'}`,
         `${_dir}/${_conf.dir || 'view'}`

@@ -1,13 +1,13 @@
-const chai   = require('chai');
-const should = chai.should();
-const assert = chai.assert;
-const AppIo  = require('../index');
+const chai    = require('chai');
+const should  = chai.should();
+const assert  = chai.assert;
+const Restlio = require('../index');
 
-let appio;
+let restlio;
 before(function (done) {
     this.timeout(0);
     
-    appio = new AppIo({
+    restlio = new Restlio({
         basedir: __dirname,
         test: true
     }).run(() => {
