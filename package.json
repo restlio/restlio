@@ -1,7 +1,7 @@
 {
   "name": "restlio",
   "description": "REST API and web application framework, built on Nodejs, Express, and Mongoose",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "author": "Selçuk Fatih Sevinç",
   "license": "MIT",
   "engines": {
