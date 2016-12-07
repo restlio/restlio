@@ -1,6 +1,6 @@
 const async  = require('async');
 const crypto = require('crypto');
-const uuid   = require('node-uuid');
+const uuid   = require('uuid');
 const php    = require('phpjs');
 const _      = require('underscore');
 
@@ -124,7 +124,7 @@ module.exports = app => {
      * ----------------------------------------------------------------
      */
 
-    UserSchema.pre('save', next => {
+    UserSchema.pre('save', function(next) {
         const self = this;
 
         // unique durumunu korumak için email hep küçük harf olarak kaydedilecek
@@ -149,7 +149,7 @@ module.exports = app => {
      * ----------------------------------------------------------------
      */
 
-    UserSchema.post('save', doc => {
+    UserSchema.post('save', function(doc) {
         const self = this;
 
         // emit event (last_login güncellemesi ise işlem yapma)
@@ -162,7 +162,7 @@ module.exports = app => {
 
         let roles = [];
         doc       = doc.toJSON();
-        const id    = doc._id.toString();
+        const id  = doc._id.toString();
 
         // mevcut kaydedilen roller
         if(doc.ro.length) {
@@ -283,9 +283,9 @@ module.exports = app => {
      * ----------------------------------------------------------------
      */
 
-    UserSchema.post('remove', doc => {
+    UserSchema.post('remove', function(doc) {
         const self = this;
-        doc      = doc.toJSON();
+        doc        = doc.toJSON();
         const id   = doc._id.toString();
 
         // kayıt silinmesi durumunda rolleri siliyoruz

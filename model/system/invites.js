@@ -90,7 +90,7 @@ module.exports = app => {
      * ----------------------------------------------------------------
      */
 
-    InviteSchema.pre('save', next => {
+    InviteSchema.pre('save', function(next) {
 
         const self = this;
         self._isNew = self.isNew;
@@ -104,7 +104,7 @@ module.exports = app => {
      * ----------------------------------------------------------------
      */
 
-    InviteSchema.post('save', doc => {
+    InviteSchema.post('save', function(doc) {
 
         // eğer app için invite moderation aktif ise status değişimine bak, onaylandıysa mail at
         if( ! this._isNew ) {

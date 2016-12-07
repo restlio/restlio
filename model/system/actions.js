@@ -88,7 +88,7 @@ module.exports = app => {
      * ----------------------------------------------------------------
      */
 
-    ActionSchema.pre('save', next => {
+    ActionSchema.pre('save', function(next) {
 
         const self = this;
         self._isNew = self.isNew;
@@ -102,7 +102,7 @@ module.exports = app => {
      * ----------------------------------------------------------------
      */
 
-    ActionSchema.post('save', doc => {
+    ActionSchema.post('save', function(doc) {
         const self = this;
         doc      = doc.toJSON();
 

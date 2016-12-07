@@ -11,7 +11,7 @@ module.exports = (app, loadCb) => {
 	const _mongoose = app.core.mongo.mongoose;
 	const _c        = app.config[_env];
     const _group    = 'SYNC:DATA';
-    const workerId  = app.get('workerid');
+    const workerId  = parseInt(app.get('workerid'));
     
     if(workerId !== 0) {
         loadCb();

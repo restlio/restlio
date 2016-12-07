@@ -18,7 +18,7 @@
 			{% if session.app %}
 				<div class="container-fluid">
                     <div class="row bp-class__row" style="margin-top:20px; margin-bottom: 10px;">
-                        <div class="col-md-2" style="text-align:center;">
+                        <div class="col-md-3" style="text-align:center;">
                             <div class="console" style="">{{ opts.plural|title }}</div>
                             <div class="bp-ui__statistic">
                                 {% if counts %}
@@ -30,7 +30,7 @@
                             </div>
                         </div>
                         
-                        <div class="col-md-10">
+                        <div class="col-md-9">
                             <div class="bp-class__canvas" style="max-width:900px;">
                                 <canvas id="canvas-{{_object}}" height="120" width="900"></canvas>
                             </div>
@@ -192,12 +192,12 @@
                                                         {% endif %}
                                                     {% endif %}
 
-                                                    data-field="{% if props[alias[l]].settings.display %}{{ l }}.{{ props[alias[l]].settings.display }}{% else %}{{ l }}{% endif %}"
+                                                    data-field="{% if props[alias[l]] && props[alias[l]].settings.display %}{{ l }}.{{ props[alias[l]].settings.display }}{% else %}{{ l }}{% endif %}"
                                                     data-sortable="true"
                                                     {% if l == opts.main and opts.noedit == false %}data-formatter="editFormatter"{% endif %}
                                                     >
-                                                    {% if props[alias[l]].settings.label %}{{ props[alias[l]].settings.label }}{% else %}{{ l }}{% endif %}
-                                                    {% if props[alias[l]].settings.field == 'datetime' && session.time %}
+                                                    {% if props[alias[l]] && props[alias[l]].settings.label %}{{ props[alias[l]].settings.label }}{% else %}{{ l }}{% endif %}
+                                                    {% if props[alias[l]] && props[alias[l]].settings.field == 'datetime' && session.time %}
                                                         ({{ session.time.name }})
                                                     {% endif %}
                                                 </th>
@@ -306,7 +306,7 @@
 
             var display = {}, dData = {};
             {% for l in opts.columns %}
-                {% if props[alias[l]].settings.display %}
+                {% if props[alias[l]] && props[alias[l]].settings.display %}
                     display['{{ l }}'] = '{{ props[alias[l]].settings.display }}';
                 {% endif %}
             {% endfor %}

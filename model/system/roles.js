@@ -62,7 +62,7 @@ module.exports = app => {
      * ----------------------------------------------------------------
      */
 
-    RoleSchema.pre('save', next => {
+    RoleSchema.pre('save', function(next) {
 
         const self = this;
         self._isNew = self.isNew;
@@ -76,7 +76,7 @@ module.exports = app => {
      * ----------------------------------------------------------------
      */
 
-    RoleSchema.post('save', doc => {
+    RoleSchema.post('save', function(doc) {
 
         const self = this;
         if(self._isNew) {}

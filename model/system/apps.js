@@ -61,7 +61,7 @@ module.exports = app => {
      * ----------------------------------------------------------------
      */
 
-    AppsSchema.pre('save', next => {
+    AppsSchema.pre('save', function(next) {
 
         const self    = this;
         self._isNew = self.isNew;
@@ -75,7 +75,7 @@ module.exports = app => {
      * ----------------------------------------------------------------
      */
 
-    AppsSchema.post('save', doc => {
+    AppsSchema.post('save', function(doc) {
 
         const self = this;
         if(self._isNew) {}

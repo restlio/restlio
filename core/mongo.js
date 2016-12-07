@@ -49,6 +49,8 @@ module.exports = app => {
     // set core object
     const obj = {db, str, mongoose};
     app.core.mongo = obj;
+    app.config[_env].mongo = {str};
+
     return obj;
 
 };

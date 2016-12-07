@@ -63,7 +63,7 @@ module.exports = app => {
      * ----------------------------------------------------------------
      */
 
-    FilterSchema.pre('save', next => {
+    FilterSchema.pre('save', function(next) {
 
         const self    = this;
         self._isNew = self.isNew;
@@ -77,7 +77,7 @@ module.exports = app => {
      * ----------------------------------------------------------------
      */
 
-    FilterSchema.post('save', doc => {
+    FilterSchema.post('save', function(doc) {
 
         const self = this;
         if(self._isNew) {}

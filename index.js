@@ -73,7 +73,7 @@ class Restlio {
 
         // base boot files
         const api = 'body|config|x-powered-by|cors';
-        const web = 'view|compress|static|cookie|session|timezone|flash|favicon|locals|admin/redirect|cron|kue';
+        const web = 'view|compress|static|cookie|session|timezone|flash|favicon|locals|admin|cron|kue';
 
         // load config
         this._load = this._load(`config/${this._app.get('env')}`, {
@@ -85,7 +85,7 @@ class Restlio {
         const _external = this._opts.external;
         
         this.external('apidocs', 'config.json');
-        this.internal('system/logger|lib/logger|boot/uncaught');
+        this.internal('system/logger|lib/logger|boot/uncaught|boot/bottle');
         this.internal('core', this._opts.core);
         this.internal('lib');
         this.external('lib', _external.lib);
@@ -93,18 +93,22 @@ class Restlio {
         this.external('libpost', _external.libpost);
         this.internal('middle');
         this.external('middle', _external.middle);
-        this.internal('model', 'acl|feed|oauth|system');
+        this.internal('model', 'acl|oauth|system');
         this.external('model', _external.model);
+        this.internal('service');
+        this.external('service', _external.service);
         // order matters
         this.internal('system/response/app'); // before routes
         // api routes
         this.internal('boot', api);
-        this.internal('route/api/v1', 'acl|auth|counter|entity|location|object');
+        this.internal('route/api/v1', 'acl|auth|counter|entity|object');
         this.external('api', _external.api);
         // web routes
         this.internal('boot', web);
         this.internal('boot', this._opts.boot);
         this.external('boot', _external.boot);
+        this.internal('service/init');
+        this.external('service', 'init');
         this.external('route', _external.route);
         // other routes
         this.internal('route/api/v1', 'social'); // requires session
@@ -122,7 +126,7 @@ class Restlio {
             return;
         
         // base boot files
-        const boot = 'view|cron|kue|shortener';
+        const boot = 'view|cron|kue';
 
         // set worker
         this._app.set('isworker', true);
@@ -136,7 +140,7 @@ class Restlio {
         // external options
         const _external = this._opts.external;
         
-        this.internal('system/logger|lib/logger|boot/uncaught');
+        this.internal('system/logger|lib/logger|boot/uncaught|boot/bottle');
         this.internal('core', this._opts.core);
         this.internal('lib');
         this.external('lib', _external.lib);
@@ -144,8 +148,12 @@ class Restlio {
         this.external('libpost', _external.libpost);
         this.internal('middle');
         this.external('middle', _external.middle);
-        this.internal('model', 'acl|feed|oauth|system');
+        this.internal('model', 'acl|oauth|system');
         this.external('model', _external.model);
+        this.internal('service');
+        this.external('service', _external.service);
+        this.internal('service/init');
+        this.external('service', 'init');
         this.internal('boot', boot);
         this.internal('boot', this._opts.boot);
         this.external('boot', _external.boot);

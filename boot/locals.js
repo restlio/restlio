@@ -13,8 +13,6 @@ module.exports = app => {
         if(app.boot.session)
             res.locals.session = req.session;
 
-        console.log(res.locals.session);
-
         if(app.boot.flash)
             res.locals.flash = req.flash('flash');
 

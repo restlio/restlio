@@ -64,7 +64,7 @@ module.exports = app => {
      * ----------------------------------------------------------------
      */
 
-    ClientsSchema.pre('save', next => {
+    ClientsSchema.pre('save', function(next) {
 
         const self = this;
 
@@ -86,7 +86,7 @@ module.exports = app => {
      * ----------------------------------------------------------------
      */
 
-    ClientsSchema.post('save', doc => {
+    ClientsSchema.post('save', function(doc) {
 
         const self = this;
         if(self._isNew) {}

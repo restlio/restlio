@@ -79,7 +79,7 @@ module.exports = app => {
      * ----------------------------------------------------------------
      */
 
-    ImageSchema.pre('save', next => {
+    ImageSchema.pre('save', function(next) {
 
         const self    = this;
         self._isNew = self.isNew;
@@ -93,7 +93,7 @@ module.exports = app => {
      * ----------------------------------------------------------------
      */
 
-    ImageSchema.post('save', doc => {
+    ImageSchema.post('save', function(doc) {
 
         const self = this;
         if(self._isNew) {}
