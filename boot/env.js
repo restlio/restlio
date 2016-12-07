@@ -1,7 +1,8 @@
 module.exports = app => {
 
     const _group = 'BOOT:ENV';
-    
+    const _log   = app.lib.logger;
+
     _log.info(`${_group}:PROCESS_ENV`, process.env);
     _log.info(`${_group}:APP_NAME`, app.get('name'));
     _log.info(`${_group}:APP_ENV`, app.get('env'));
