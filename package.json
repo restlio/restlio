@@ -1,7 +1,7 @@
 {
   "name": "restlio",
   "description": "REST API and web application framework, built on Nodejs, Express, and Mongoose",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "author": "Selçuk Fatih Sevinç",
   "license": "MIT",
   "engines": {
@@ -94,7 +94,10 @@
     "nodemailer-smtp-transport": "2.5.0",
     "smtp-connection": "2.5.0",
     "nodemailer-smtp-pool": "2.6.0",
-    "bottlejs": "1.5.0"
+    "bottlejs": "1.5.0",
+    "debug": "2.3.3",
+    "superagent": "3.1.0",
+    "html-minifier": "3.2.3"
   },
   "devDependencies": {
     "babel-preset-es2015": "^6.18.0",
