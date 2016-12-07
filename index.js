@@ -105,7 +105,7 @@ class Restlio {
         this.external('api', _external.api);
         // web routes
         this.internal('boot', web);
-        this.internal('boot', this._opts.boot);
+        if(this._opts.boot) this.internal('boot', this._opts.boot);
         this.external('boot', _external.boot);
         this.internal('service/init');
         this.external('service', 'init');
@@ -155,7 +155,7 @@ class Restlio {
         this.internal('service/init');
         this.external('service', 'init');
         this.internal('boot', boot);
-        this.internal('boot', this._opts.boot);
+        if(this._opts.boot) this.internal('boot', this._opts.boot);
         this.external('boot', _external.boot);
         this.internal('worker');
         this.external('worker', _external.worker);
