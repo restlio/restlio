@@ -65,6 +65,9 @@ module.exports = app => {
     // get collection graph data
     const collGraphs = (req, res, next, appSlug, colls, days) => {
         return (cb) => {
+            if( ! appSlug )
+                return cb(null, {});
+
             const endDate = moment().utc().add(1, 'days').startOf('day').valueOf();
             const step = 24 * 60 * 60 * 1000;
 
@@ -121,11 +124,13 @@ module.exports = app => {
     // admin main page
     app.get('/admin', (req, res, next) => {
         // console.log(req.session);
-        
+
+        const _slug      = dot.get(req.session, 'app.slug');
+        const _resources = req.session.resources || {};
+        const _keys      = Object.keys(_resources[_slug] || {});
+
         if(req.session.user) {
-            const _slug = req.session.app.slug;
-            const _resources = req.session.resources;
-            collData(req, res, next, _slug, Object.keys(_resources[_slug] || {}), 60, (err, results) => {
+            collData(req, res, next, _slug, _keys, 60, (err, results) => {
                 // console.log(results);
                 res.render('admin/v2/page/index', {
                     page: 'dashboard',
@@ -222,9 +227,7 @@ module.exports = app => {
                 });
             }
 
-            const _slug = req.session.app.slug;
-            const _resources = req.session.resources;
-            collData(req, res, next, _slug, Object.keys(_resources[_slug]), 30, (err, results) => {
+            collData(req, res, next, _slug, _keys, 30, (err, results) => {
                 // console.log(results);
                 res.render('admin/v2/page/index', {
                     page: 'dashboard',
