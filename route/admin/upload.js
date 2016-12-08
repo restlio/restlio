@@ -3,7 +3,6 @@ const cloudinary = require('cloudinary');
 const async      = require('async');
 const fs         = require('fs');
 const stream     = require('stream');
-const php        = require('phpjs');
 const dot        = require('dotty');
 const AWS        = require('aws-sdk');
 const mkdirp     = require('mkdirp');

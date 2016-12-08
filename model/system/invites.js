@@ -1,5 +1,4 @@
 const async = require('async');
-const php   = require('phpjs');
 const dot   = require('dotty');
 const _     = require('underscore');
 

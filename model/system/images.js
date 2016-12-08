@@ -1,5 +1,4 @@
-const php = require('phpjs');
-const _   = require('underscore');
+const _ = require('underscore');
 
 module.exports = app => {
 
