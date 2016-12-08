@@ -89,6 +89,9 @@ module.exports = app => {
                         token
                     };
                     
+                    _log.info(`${_group}SESSION_OBJ`, sessionObj);
+                    req.session.social.foursquareObj = req.session.social.foursquareObj || {};
+
                     if( ! account ) {
                         new _schema('system.accounts').init(app).post({
                             apps: apps._id.toString(),
@@ -108,6 +111,7 @@ module.exports = app => {
 
                             sessionObj.account_id = doc._id.toString();
                             req.session.social.foursquare = sessionObj;
+                            req.session.social.foursquareObj[profile.id] = sessionObj;
                             _emitter.emit('foursquare_connected', sessionObj);
 
                             done(null, {foursquare: {}});
@@ -123,6 +127,7 @@ module.exports = app => {
                         }, (err, affected) => {
                             sessionObj.account_id = account._id.toString();
                             req.session.social.foursquare = sessionObj;
+                            req.session.social.foursquareObj[profile.id] = sessionObj;
                             _emitter.emit('foursquare_connected', sessionObj);
 
                             done(null, {foursquare: {}});

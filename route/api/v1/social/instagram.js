@@ -9,6 +9,7 @@ module.exports = app => {
 
     const _env     = app.get('env');
     const _mdl     = app.middle;
+    const _log     = app.lib.logger;
     const _schema  = app.lib.schema;
     const _conf    = app.config[_env].social;
     const _emitter = app.lib.schemaEmitter;
@@ -69,6 +70,9 @@ module.exports = app => {
                         refresh_token: refreshToken
                     };
                     
+                    _log.info(`${_group}SESSION_OBJ`, sessionObj);
+                    req.session.social.instagramObj = req.session.social.instagramObj || {};
+
                     if( ! account ) {
                         new _schema('system.accounts').init(app).post({
                             apps: apps._id.toString(),
@@ -88,6 +92,7 @@ module.exports = app => {
 
                             sessionObj.account_id = doc._id.toString();
                             req.session.social.instagram = sessionObj;
+                            req.session.social.instagramObj[profile.id] = sessionObj;
                             _emitter.emit('instagram_connected', sessionObj);
 
                             done(null, {instagram: {}});
@@ -102,6 +107,7 @@ module.exports = app => {
                         }, (err, affected) => {
                             sessionObj.account_id = account._id.toString();
                             req.session.social.instagram = sessionObj;
+                            req.session.social.instagramObj[profile.id] = sessionObj;
                             _emitter.emit('instagram_connected', sessionObj);
 
                             done(null, {instagram: {}});
