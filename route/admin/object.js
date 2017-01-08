@@ -129,7 +129,7 @@ module.exports = app => {
         const _resources = req.session.resources || {};
         const _keys      = Object.keys(_resources[_slug] || {});
 
-        if(req.session.user) {
+        if(req.session.adminUser) {
             collData(req, res, next, _slug, _keys, 60, (err, results) => {
                 // console.log(results);
                 res.render('admin/v2/page/index', {
@@ -181,7 +181,7 @@ module.exports = app => {
                 return res.render('admin/v2/page/index');
 
             // set user session data
-            req.session.user = results.u;
+            req.session.adminUser = results.u;
 
             // set apps session data
             req.session.apps = {};
@@ -267,7 +267,7 @@ module.exports = app => {
                 filters(cb) {
                     // get filters
                     new _schema('system.filters').init(req, res, next).get({
-                        users: req.session.user._id,
+                        users: req.session.adminUser._id,
                         object: o
                     }, (err, filters) => {
                         cb(null, filters);
@@ -502,7 +502,7 @@ module.exports = app => {
 
             // set user id
             if(o == 'system.filters')
-                req.body.users = req.session.user._id;
+                req.body.users = req.session.adminUser._id;
 
             new _schema(o).init(req, res, next).dateFormat().post(req.body, (err, doc) => {
                 if(err)
@@ -558,7 +558,7 @@ module.exports = app => {
 
             // set user id
             if(o == 'system.filters')
-                params.users = req.session.user._id;
+                params.users = req.session.adminUser._id;
 
             new _schema(o, {format: false}).init(req, res, next).get(params, (err, doc) => {
                 if(err)
@@ -613,7 +613,7 @@ module.exports = app => {
 
             // set user id
             if(o == 'system.filters')
-                req.body.users = req.session.user._id;
+                req.body.users = req.session.adminUser._id;
 
             new _schema(o).init(req, res, next).dateFormat().put(id, req.body, (err, doc) => {
                 if(err)
@@ -818,8 +818,8 @@ module.exports = app => {
 	        }
 	        
             // set user id
-            if(req.session.user && o == 'system.filters')
-                p.users = req.session.user._id;
+            if(req.session.adminUser && o == 'system.filters')
+                p.users = req.session.adminUser._id;
 
             // query type
             p.qt = 'findcount';
@@ -971,7 +971,7 @@ module.exports = app => {
             a.filters = cb => {
                 new _schema('system.filters').init(req, res, next).get({
                     apps: req.session.app._id,
-                    users: req.session.user._id,
+                    users: req.session.adminUser._id,
                     object: o
                 }, (err, filters) => {
                     cb(err, filters);
@@ -1024,7 +1024,7 @@ module.exports = app => {
 
         try {
             req.body.apps  = req.session.app._id; // set app id
-            req.body.users = req.session.user._id; // set user id
+            req.body.users = req.session.adminUser._id; // set user id
 
             new _schema('system.filters').init(req, res, next).post(req.body, (err, doc) => {
                 if(err)

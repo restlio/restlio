@@ -48,7 +48,7 @@ module.exports = app => {
                 files.forEach(file => {
                     const obj = {
                         apps: req.session.app._id,
-                        users: req.session.user._id,
+                        users: req.session.adminUser._id,
                         name: file.name,
                         upload_type: 'A',
                         bytes: file.size,
