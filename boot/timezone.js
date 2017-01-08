@@ -13,7 +13,8 @@ module.exports = app => {
         if(req.session.time) {
             const currTz = moment.tz(req.session.time.name);
             const hours  = currTz.format('Z');
-            const mins   = currTz.zone();
+            // const mins = currTz.zone();
+            const mins   = currTz.utcOffset();
             
             req.session.time.hours = hours;
             req.session.time.mins  = mins;

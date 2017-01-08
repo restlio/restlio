@@ -7,5 +7,6 @@ module.exports = app => {
     _bottle.factory('ConfigService', container => app.config[_env]); 
     _bottle.factory('ResponseService', container => app.system.response.app); 
     _bottle.factory('CacheService', container => new app.lib.cache(app)); 
+    _bottle.factory('HelperService', container => app.lib.utils.helper); 
 
 };

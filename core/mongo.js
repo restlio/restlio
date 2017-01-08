@@ -6,11 +6,11 @@ module.exports = app => {
     const _env    = app.get('env');
     const _log    = app.lib.logger;
     const _conf   = app.config[_env].mongo || dot.get(app.config[_env], 'data.mongo');
-    let _auth   = '';
     const _worker = app.get('workerid');
     const _sConf  = app.config[_env].sync;
     const _logs   = dot.get(_sConf, 'data.core');
     const _group  = `W${_worker}:CORE:MONGO`;
+    let _auth     = '';
 
     if( ! _conf ) {
         _log.info(_group, 'mongo conf not found!', 'red');

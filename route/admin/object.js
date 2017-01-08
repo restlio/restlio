@@ -162,8 +162,7 @@ module.exports = app => {
         };
 
         async.parallel(a, (err, results) => {
-            // if(results)
-            //    console.log(results);
+            // if(results) console.log(results);
 
             let render = true;
 
@@ -227,8 +226,10 @@ module.exports = app => {
                 });
             }
 
+            // console.log(req.session);
             collData(req, res, next, _slug, _keys, 30, (err, results) => {
                 // console.log(results);
+                // console.log(req.session);
                 res.render('admin/v2/page/index', {
                     page: 'dashboard',
                     graphs: results.graphs,
