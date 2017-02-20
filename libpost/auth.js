@@ -5,14 +5,13 @@ const _     = require('underscore');
 class LibpostAuth {
 
     constructor(app) {
-        this._app       = app;
-        this._env       = app.get('env');
-        this._conf      = app.config[this._env].api;
-        this._log       = app.lib.logger;
-        this._async     = app.lib.async;
-        this._schema    = app.lib.schema;
-        this._helper    = app.lib.utils.helper;
-        this._mailer    = app.lib.mailer;
+        this._app    = app;
+        this._env    = app.get('env');
+        this._conf   = app.config[this._env].api;
+        this._log    = app.lib.logger;
+        this._schema = app.lib.schema;
+        this._helper = app.lib.utils.helper;
+        this._mailer = app.lib.mailer;
 
         return this;
     }
@@ -21,7 +20,13 @@ class LibpostAuth {
         const self = this;
 
         const a = {
-            resources: self._async.aclResources(userId)
+            resources: cb => {
+                self._app.acl.userRoles(userId, (err, roles) => {
+                    self._app.acl.whatResources(roles, (err, resources) => {
+                        cb(null, {roles, resources});
+                    });
+                });
+            },
         };
 
         // get user profile
@@ -47,8 +52,9 @@ class LibpostAuth {
         this.userProfile(userId, appSlug, (err, results) => {
             const data = {_id: userId};
 
-            if(results.profile)
+            if(results.profile) {
                 data.profile = results.profile._id.toString();
+            }
 
             const token = tokenDisabled ? {} : self._helper.genToken(data, tConf.secret, tConf.expires);
 
@@ -72,7 +78,7 @@ class LibpostAuth {
                     display_name: accountData.display_name || '',
                     profile_photo: accountData.profile_photo || false,
                     timezone: accountData.timezone || 0,
-                    gender: accountData.gender || ''
+                    gender: accountData.gender || '',
                 };
             }
             
@@ -88,11 +94,7 @@ class LibpostAuth {
         const mConf = dot.get(self._app.config[self._env], `app.mail.${appSlug}`) ||
                       dot.get(self._app.config[self._env], `mail.${appSlug}`);
 
-        /**
-         * @TODO
-         * callback ile hataları dön
-         */
-            
+        // TODO: callback ile hataları dön
         // set transport
         const _transport = self._app.boot.mailer[appSlug] || self._app.boot.mailer;
 
@@ -102,10 +104,9 @@ class LibpostAuth {
             self._app.render(`${appSlug}/email/templates/${name}`, {
                 baseUrl  : mConf.baseUrl,
                 endpoint : mConf.endpoints[name],
-                token
+                token,
             }, (err, html) => {
-                if(err)
-                    self._log.error(group, err);
+                if(err) self._log.error(group, err);
 
                 if(html) {
                     mailObj.to   = toEmail;
@@ -116,16 +117,17 @@ class LibpostAuth {
                     new self._mailer(_transport).send(mailObj);
                 }
             });
-        }
-        else
+        } else {
             self._log.info(`${group}:MAIL_OBJ`, 'not found');
+        }
 
         cb();
     }
 
     userAcl(userId, objects, cb) {
-        if(this._helper.type(objects) != '[object Array]')
+        if(this._helper.type(objects) !== '[object Array]') {
             objects = [objects];
+        }
         
         _.each(objects, (value, key) => {
             objects[key] = value.replace('.', '_');

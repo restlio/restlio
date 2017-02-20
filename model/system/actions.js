@@ -1,10 +1,8 @@
 const async = require('async');
 const php   = require('phpjs');
-const dot   = require('dotty');
 const _     = require('underscore');
 
 module.exports = app => {
-
     const _env      = app.get('env');
     const _log      = app.lib.logger;
     const _mongoose = app.core.mongo.mongoose;
@@ -27,7 +25,7 @@ module.exports = app => {
         r   : {type: ObjectId, required: true, ref: 'System_Roles', alias: 'roles'},
         o   : {type: ObjectId, required: true, ref: 'System_Objects', alias: 'objects'},
         a   : [{type: String, required: true, enum: ['get', 'post', 'put', 'delete'], alias: 'action'}],
-        m   : [{type: String, enum: ['get*', 'post*', 'put*', 'delete*'], alias: 'master'}]
+        m   : [{type: String, enum: ['get*', 'post*', 'put*', 'delete*'], alias: 'master'}],
     };
 
     /**
@@ -45,8 +43,8 @@ module.exports = app => {
             {label: 'Get', value: 'get'},
             {label: 'Post', value: 'post'},
             {label: 'Put', value: 'put'},
-            {label: 'Delete', value: 'delete'}
-        ]
+            {label: 'Delete', value: 'delete'},
+        ],
     };
 
     Schema.m[0].settings = {
@@ -55,8 +53,8 @@ module.exports = app => {
             {label: 'Get', value: 'get*'},
             {label: 'Post', value: 'post*'},
             {label: 'Put', value: 'put*'},
-            {label: 'Delete', value: 'delete*'}
-        ]
+            {label: 'Delete', value: 'delete*'},
+        ],
     };
 
     /**
@@ -72,8 +70,8 @@ module.exports = app => {
             plural   : 'System Actions',
             columns  : ['roles', 'objects', 'action', 'master'],
             main     : 'action',
-            perpage  : 25
-        }
+            perpage  : 25,
+        },
     });
 
     // plugins
@@ -89,11 +87,9 @@ module.exports = app => {
      */
 
     ActionSchema.pre('save', function(next) {
-
         const self = this;
         self._isNew = self.isNew;
         next();
-
     });
 
     /**
@@ -104,7 +100,7 @@ module.exports = app => {
 
     ActionSchema.post('save', function(doc) {
         const self = this;
-        doc      = doc.toJSON();
+        doc        = doc.toJSON();
 
         if(app.acl) {
             const Apps    = _mongoose.model('System_Apps');
@@ -126,29 +122,28 @@ module.exports = app => {
             };
 
             async.parallel(a, (err, results) => {
-                if(err)
-                    return _log.error(err);
+                if(err) return _log.error(err);
 
-                if( ! results || ! results.role || ! results.object )
+                if( ! results || ! results.role || ! results.object ) {
                     return _log.info('role or object not found');
+                }
 
                 const role    = results.role;
                 const object  = results.object;
                 const roleApp = role.ap.toString();
                 const objApp  = object.ap.toString();
 
-                /**
-                 * @TODO
-                 * system objelerine erişim izni gereken uygulamalarda bu kontrol izin vermiyor
-                 * (uygulama ile sistem ayrı application)
-                 */
+                // TODO:
+                // system objelerine erişim izni gereken uygulamalarda bu kontrol izin vermiyor
+                // (uygulama ile sistem ayrı application)
 
                 // if(roleApp != objApp)
                 //    return _log.info('app id is not same for role and object');
 
                 Apps.findById(roleApp, (err, apps) => {
-                    if( err || ! apps )
+                    if( err || ! apps ) {
                         return _log.info('app not found');
+                    }
 
                     const roleName = `${apps.s}_${role.s}`;
                     const objName  = object.s.replace('.', '_');
@@ -164,13 +159,12 @@ module.exports = app => {
                         return _log.info(`[acl:allow] ${roleName}:${objName}:${doc.a}`);
                     }
 
-                    /**
-                     * @TODO
-                     * aşağıdaki actions ve master işlemlerinde _original data gerekiyor, yoksa işlem yapmıyoruz
-                     */
+                    // TODO:
+                    // aşağıdaki actions ve master işlemlerinde _original data gerekiyor, yoksa işlem yapmıyoruz
 
-                    if( ! self._original )
+                    if( ! self._original ) {
                         return _log.info('action original data not found !!!');
+                    }
 
                     /**
                      * actions
@@ -234,7 +228,7 @@ module.exports = app => {
 
     ActionSchema.post('remove', function (doc) {
         const self = this;
-        doc      = doc.toJSON();
+        doc        = doc.toJSON();
 
         if(app.acl) {
             const Apps    = _mongoose.model('System_Apps');
@@ -256,29 +250,28 @@ module.exports = app => {
             };
 
             async.parallel(a, (err, results) => {
-                if(err)
-                    return _log.error(err);
+                if(err) return _log.error(err);
 
-                if( ! results || ! results.role || ! results.object )
+                if( ! results || ! results.role || ! results.object ) {
                     return _log.info('role or object not found');
+                }
 
                 const role    = results.role;
                 const object  = results.object;
                 const roleApp = role.ap.toString();
                 const objApp  = object.ap.toString();
 
-                /**
-                 * @TODO
-                 * system objelerine erişim izni gereken uygulamalarda bu kontrol izin vermiyor
-                 * (uygulama ile sistem ayrı application)
-                 */
+                // TODO:
+                // system objelerine erişim izni gereken uygulamalarda bu kontrol izin vermiyor
+                // (uygulama ile sistem ayrı application)
 
                 // if(roleApp != objApp)
                 //    return _log.info('app id is not same for role and object');
 
                 Apps.findById(roleApp, (err, apps) => {
-                    if( err || ! apps )
+                    if( err || ! apps ) {
                         return _log.info('app not found');
+                    }
 
                     const roleName = `${apps.s}_${role.s}`;
                     const objName  = object.s.replace('.', '_');
@@ -296,8 +289,4 @@ module.exports = app => {
     });
 
     return _mongoose.model('System_Actions', ActionSchema);
-
 };
-
-
-

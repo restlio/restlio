@@ -363,13 +363,8 @@ module.exports = (app, loadCb) => {
                     schema.stream({limit: 100000}, (err, users) => {
 
                         users.on('data', user => {
-
-                            /**
-                             * @TODO
-                             * fazla sayıda kullanıcı olması durumunda burasının kuyrukta çalışması gerekecek
-                             */
+                            // TODO: fazla sayıda kullanıcı olması durumunda burasının kuyrukta çalışması gerekecek
                             new app.lib.user(app).addRole(user);
-
                         }).on('error', err => {
                             _log.error(_group, err);
                         }).on('end', () => {
@@ -405,7 +400,7 @@ module.exports = (app, loadCb) => {
 
             const usersApp = dot.get(_c, 'sync.fill_users_apps');
             
-            if(usersApp) {
+            if(usersApp && Object.keys(usersApp).length) {
 
                 series.userapps = cb => {
                     
@@ -451,9 +446,16 @@ module.exports = (app, loadCb) => {
              * ----------------------------------------------------------------
              */
 
-            async.series(series, (err, results) => {
-                if(err)
-                    return _log.error(_group, err);
+            async.series(series, (err, results = {}) => {
+                if(err) {
+                    _log.error(_group, err);
+                    return loadCb();
+                }
+
+                if( ! Object.keys(results).length ) {
+                    _log.info(`${_group}:SERIES:RESULTS`, 'not found!');
+                    return loadCb();
+                }
 
                 _log.info(`${_group}:SERIES:RESULTS`, 'listing...');
                 // console.log(results);
@@ -463,7 +465,7 @@ module.exports = (app, loadCb) => {
                 
                 setTimeout(() => {
                     loadCb();     
-                }, 1000);
+                }, 500);
             });
 
         });

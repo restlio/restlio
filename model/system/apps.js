@@ -1,7 +1,4 @@
-const _ = require('underscore');
-
 module.exports = app => {
-
     const _env      = app.get('env');
     const _log      = app.lib.logger;
     const _mongoose = app.core.mongo.mongoose;
@@ -21,7 +18,7 @@ module.exports = app => {
     const Schema = {
         n : {type: String, required: true, alias: 'name', unique: true},
         s : {type: String, required: true, alias: 'slug', unique: true},
-        l : {type: String, required: true, alias: 'long', unique: true}
+        l : {type: String, required: true, alias: 'long', unique: true},
     };
 
     /**
@@ -47,8 +44,8 @@ module.exports = app => {
             plural   : 'System Apps',
             columns  : ['name', 'slug', 'long'],
             main     : 'name',
-            perpage  : 10
-        }
+            perpage  : 10,
+        },
     });
 
     // plugins
@@ -61,11 +58,9 @@ module.exports = app => {
      */
 
     AppsSchema.pre('save', function(next) {
-
         const self    = this;
         self._isNew = self.isNew;
         next();
-
     });
 
     /**
@@ -75,15 +70,9 @@ module.exports = app => {
      */
 
     AppsSchema.post('save', function(doc) {
-
         const self = this;
         if(self._isNew) {}
-
     });
 
     return _mongoose.model('System_Apps', AppsSchema);
-
 };
-
-
-

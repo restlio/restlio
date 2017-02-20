@@ -1,5 +1,4 @@
 module.exports = app => {
-
     const _env      = app.get('env');
     const _log      = app.lib.logger;
     const _mongoose = app.core.mongo.mongoose;
@@ -19,7 +18,7 @@ module.exports = app => {
     const Schema = {
         ap : {type: ObjectId, required: true, ref: 'System_Apps', alias: 'apps'},
         n  : {type: String, required: true, alias: 'name'},
-        s  : {type: String, required: true, alias: 'slug'}
+        s  : {type: String, required: true, alias: 'slug'},
     };
 
     /**
@@ -45,8 +44,8 @@ module.exports = app => {
             columns  : ['name', 'slug'],
             main     : 'name',
             perpage  : 25,
-            nodelete : true
-        }
+            nodelete : true,
+        },
     });
 
     // plugins
@@ -63,11 +62,9 @@ module.exports = app => {
      */
 
     RoleSchema.pre('save', function(next) {
-
         const self = this;
         self._isNew = self.isNew;
         next();
-
     });
 
     /**
@@ -77,15 +74,9 @@ module.exports = app => {
      */
 
     RoleSchema.post('save', function(doc) {
-
         const self = this;
         if(self._isNew) {}
-
     });
 
     return _mongoose.model('System_Roles', RoleSchema);
-
 };
-
-
-

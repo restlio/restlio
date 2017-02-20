@@ -3,4 +3,4 @@ function Json(req, res, next) {
     next();
 }
 
-module.exports = app => Json;
+module.exports = () => Json;

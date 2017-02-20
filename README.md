@@ -1,4 +1,4 @@
-<h1 align="center">restlio</h1>  
+<h1 align="center">Restlio</h1>  
 
 <div align="center">
   <strong>REST API and web application framework, built on Nodejs, Express, and Mongoose</strong>
@@ -39,24 +39,24 @@
 
 <br />
 
-```restlio``` (former ```app.io```) is an open source ```REST API``` and web application framework, built on ```Nodejs```, ```Express```, and ```Mongoose```,   
+```Restlio``` (former ```app.io```) is an open source ```REST API``` and web application framework, built on ```Nodejs```, ```Express```, and ```Mongoose```,   
 which is simple, easy, quick, flexible, extendable and scalable, and which has numerous features and capabilities,  
 including a pre-configured server, an auto-generated admin UI and also auto-generated ```REST API``` endpoints.  
 
-```restlio``` is ideal for quick ```REST API``` development.  
+```Restlio``` is ideal for quick ```REST API``` development.  
 It saves you from the complexity of API’s, and helps you to focus on your product and save time.  
 Moreover, it enables you to work on multiple projects within the same framework.   
 
-### Why was restlio developed?  
+### Why was Restlio developed?  
 
 - In order to be used in cases, when a very quick ```REST API``` is needed for mobile-first applications.
 - In order to answer the need for a powerful framework that will take on many tasks for you and simplify your work. It does not restrict you with given features, and it does not restrain you from writing your own code.
 - In order to provide numerous features in a single framework. For example, you can manage multiple projects. Moreover, ```REST API``` endpoints and admin UI are automatically generated from ```Mongoose``` models.
 
-### What can you do with restlio?
+### What can you do with Restlio?
 
-- ```restlio``` installs ```Express``` middlewares you may need, and runs the server. 
-- ```restlio``` connects to data sources.
+- ```Restlio``` installs ```Express``` middlewares you may need, and runs the server. 
+- ```Restlio``` connects to data sources.
 - You can use auto-generated ```REST API``` endpoints and admin UI.
 - You can use predefined models, such as apps, users, roles, objects and actions.
 - You can use the user authentication endpoints, such as login, register, forgot password, invite and change password.
@@ -66,7 +66,7 @@ Moreover, it enables you to work on multiple projects within the same framework.
 
 #### note:
 
-```restlio``` is under development, so use it at your own risk.
+```Restlio``` is under development, so use it at your own risk.
 
 ## Table Of Contents
 - [Getting Started](#getting-started)
@@ -88,7 +88,7 @@ Moreover, it enables you to work on multiple projects within the same framework.
 - [Other Authentication Endpoints](#other-authentication-endpoints)  
 - [Next Steps](#next-steps)
 - [Routes](#routes)
-- [Configuring an restlio Instance](#configuring-an-restlio-instance)
+- [Configuring a Restlio Instance](#configuring-a-restlio-instance)
 - [Views](#views)
   - [Static Files](#static-files)
 - [API Responses](#api-responses)
@@ -110,7 +110,7 @@ Moreover, it enables you to work on multiple projects within the same framework.
   - [Caching Data](#caching-data)
 - [Built-in Middlewares](#built-in-middlewares)
   - [Express Middlewares](#express-middlewares)
-  - [restlio Middlewares](#restlio-middlewares)
+  - [Restlio Middlewares](#restlio-middlewares)
 - [Admin UI](#admin-ui)
 - [Built-in Job Queue](#built-in-job-queue)
 - [Built-in Cron](#built-in-cron)
@@ -118,10 +118,7 @@ Moreover, it enables you to work on multiple projects within the same framework.
 - [Social Authentication](#social-authentication)
 - [File Uploads]
 - [On the Fly Image Resizer]
-- [Built-in URL Shortener Service]
-- [Built-in RSS Feed Parser]
 - [Data Synchronization]
-- [Socket.io Support]
 - [Oauth]
 - [API Documentation]
 
@@ -129,17 +126,17 @@ Moreover, it enables you to work on multiple projects within the same framework.
 
 ### Creating an Application
 
-The best way of using ```restlio``` is the ```Yeoman``` generator. It generates a basic skeleton for ```restlio``` based application. If you haven't installed ```Yeoman```, install it first.
+The best way of using ```Restlio``` is the ```Yeoman``` generator. It generates a basic skeleton for ```Restlio``` based application. If you haven't installed ```Yeoman```, install it first.
 ```
 $ npm install -g yo
 ```
 
-Then install the ```restlio``` generator.
+Then install the ```Restlio``` generator.
 ```
 $ npm install -g generator-restlio
 ```
 
-Now you can generate ```restlio``` application by using the ```Yeoman``` generator.
+Now you can generate ```Restlio``` application by using the ```Yeoman``` generator.
 ```
 $ yo restlio
 ```
@@ -160,21 +157,21 @@ $ yo restlio
 ? Write app description (My App Description) Test App Description  
 ```
 
-After the generator finishes installation, run the server. Don't forget to start ```Mongodb``` and ```Redis``` before running ```restlio```.
+After the generator finishes installation, run the server. Don't forget to start ```Mongodb``` and ```Redis``` before running ```Restlio```.
 ```
 $ node app
 ```
 
-That’s all! Now ```restlio``` is up and running.
+That’s all! Now ```Restlio``` is up and running.
 Let's look at the ```app.js```.
 ```js
 var Restlio = require('restlio');
 new Restlio({basedir: __dirname}).run();
 ```
 With these two lines you have a full featured framework, built on ```Express```.  
-```restlio``` is now connected to ```Mongodb``` and ```Redis```, and is using some ```Express``` middlewares you may need,
+```Restlio``` is now connected to ```Mongodb``` and ```Redis```, and is using some ```Express``` middlewares you may need,
 such as ```body-parser```, ```morgan```, ```cors```, ```swig``` as a template engine, ```compression```, ```static```, ```cookie-parser```,
-```express-session``` with ```connect-redis```, ```connect-flash```, ```serve-favicon``` and ```passport```.  
+```express-session``` with ```connect-redis```, ```connect-flash``` and ```serve-favicon```.  
 
 ### Directory Structure
 
@@ -247,7 +244,7 @@ module.exports = app => {
 };
 ```
 
-You have to include external models to an ```restlio``` instance; otherwise, ```restlio``` won't load external sources.
+You have to include external models to a ```Restlio``` instance; otherwise, ```Restlio``` won't load external sources.
 New ```app.js``` is look likes that;
 ```js
 var Restlio = require('restlio');
@@ -269,11 +266,11 @@ Yeah! Now you have a ```REST API``` for ```test.posts``` model that have sanitis
 You also have an admin UI for this model.    
 
 Have you noticed the structure of ```model/test/posts.js```?
-```restlio``` uses ```express-load``` under the hood. 
-It loads everything to the app object; thus, you can use ```restlio``` abilities in your external files with dot notation, like this;
+```Restlio``` uses ```express-load``` under the hood. 
+It loads everything to the app object; thus, you can use ```Restlio``` abilities in your external files with dot notation, like this;
 ```js
 module.exports = app => {
-    // all restlio scripts are available in your external files
+    // all Restlio scripts are available in your external files
     var _mongoose = app.core.mongo.mongoose;
 };
 ```
@@ -298,7 +295,7 @@ Now you have a ```REST API``` that listens requests on the following endpoints:
 Try to create an object:  
 Run ```[POST] http://127.0.0.1:3001/api/o/test.posts```.
 
-Do you see the response? You receive ```403``` response, because ```restlio``` is ACL-ready!
+Do you see the response? You receive ```403``` response, because ```Restlio``` is ACL-ready!
 ```js
 {
   "meta": {
@@ -315,7 +312,7 @@ In order to create an action for the ```Guest``` user, click on the "+new" butto
 Fill in the form. Select ```Guest``` for the ```Role``` field, ```Test Posts``` for the ```Object``` field and ```Post``` for the ```Action``` field.
 Try again on your HTTP client.
 
-Do you see the response now? You received ```422``` response, because ```restlio``` has an API validation!
+Do you see the response now? You received ```422``` response, because ```Restlio``` has an API validation!
 ```js
 {
   "meta": {
@@ -438,7 +435,7 @@ Other query types for ```[GET] /api/o/:object``` endpoints are;
 ## Authenticating Users
 
 We used ```Guest``` user on the examples above. However, we need authenticated users in real life.  
-You can use authentication endpoints that are ready in ```restlio```
+You can use authentication endpoints that are ready in ```Restlio```
 
 ### Creating Client Id and Client Secret
 
@@ -448,7 +445,7 @@ You can find basic auth and login cridentials in your config file, ```config/dev
 Choose ```Test App``` on admin dashboard and go to the ```Oauth->Clients``` page from the left menu.
 Create a client.
 Fill in the ```Name``` field, select ```Test App``` for the ```Apps``` field, and fill in the ```Redirect Uri``` field (```Redirect Uri``` is required, but is not important for now).
-If the ```Client Id``` and the ```Client Secret``` fields are empty, ```restlio``` will generate these keys for you.
+If the ```Client Id``` and the ```Client Secret``` fields are empty, ```Restlio``` will generate these keys for you.
  
 ### Authentication Endpoint Requests
 
@@ -520,7 +517,7 @@ We have to send a ```X-Access-Token``` header to make authenticated requests. If
 
 ## Other Authentication Endpoints
 
-```restlio``` has other authentication endpoints you may have need;
+```Restlio``` has other authentication endpoints you may have need;
 
 | Method | Endpoint             | Description                                          |
 |--------|----------------------|------------------------------------------------------|
@@ -536,12 +533,12 @@ We have to send a ```X-Access-Token``` header to make authenticated requests. If
             
 ## Next Steps
 
-You have learned the core and the most important concepts of ```restlio```. However, this is yet the tip of the iceberg.
-Next, we will learn details about ```restlio```.
+You have learned the core and the most important concepts of ```Restlio```. However, this is yet the tip of the iceberg.
+Next, we will learn details about ```Restlio```.
 
 ## Routes
 
-You know that you can use the app object and other ```restlio``` abilities in your external sources. Adding a new route is simple.   
+You know that you can use the app object and other ```Restlio``` abilities in your external sources. Adding a new route is simple.   
 Create a file under the route directory, ```route/test/posts.js```. Add your route like this;
 ```js
 module.exports = app => {
@@ -551,7 +548,7 @@ module.exports = app => {
 };
 ```
 
-You have to include external routes to an ```restlio``` instance. New ```app.js``` is look likes that;
+You have to include external routes to a ```Restlio``` instance. New ```app.js``` is look likes that;
 ```js
 var Restlio = require('restlio');
 new Restlio({
@@ -571,9 +568,9 @@ Run ```[GET] http://127.0.0.1:3001/my-route```;
 }
 ```
 
-## Configuring an restlio Instance
+## Configuring a Restlio Instance
 
-You loaded some external sources to an ```restlio``` instance on the examples above. There are some other options to configure an ```restlio``` instance.
+You loaded some external sources to a ```Restlio``` instance on the examples above. There are some other options to configure a ```Restlio``` instance.
 
 ```js
 var Restlio = require('restlio');
@@ -595,18 +592,18 @@ new Restlio({
 }).run();
 ```
 
-- **```cores```** You can configure the number of ```Node.js``` instances to take advantage of multi-core systems. By default, an ```restlio``` instance uses the maximum number of cpu cores.     
+- **```cores```** You can configure the number of ```Node.js``` instances to take advantage of multi-core systems. By default, a ```Restlio``` instance uses the maximum number of cpu cores.     
 - **```verbose```** If you want to see the loaded modules, use this option.  
 - **```env```** You can set the environment with this option. You can also use process environment variable if you want; ```NODE_ENV=production```  
 - **```port```** You can set the server's port with this option. You can also use process environment variable if you want; ```NODE_PORT=3001```  
 - **```core```** You can load other data sources with this option. Available options are; ```cache```, ```db```, ```elasticsearch```, ```mongo```, ```redis```, ```solr```.  
-- **```boot```** You can load some extra functionalities that ```restlio``` doesn't load with minimal configuration. Available options are; ```mailer```, ```mailerPool```, ```oauthproxy```, ```override```, ```resize```  
+- **```boot```** You can load some extra functionalities that ```Restlio``` doesn't load with minimal configuration. Available options are; ```mailer```, ```mailerPool```, ```oauthproxy```, ```override```, ```resize```  
 - **```external```** You can load external sources with this option. Available options are;  ```boot```, ```model```, ```middle```, ```lib```, ```route```  
 
 ## Views
 
-Now you have a route file under the route directory; ```route/test/posts.js```. Let's try to render a view in this file. ```restlio``` uses ```Swig``` as a template engine.
-By default, ```restlio``` is looking for the ```view``` directory. You can change it from the configuration file; ```config/development.js```.
+Now you have a route file under the route directory; ```route/test/posts.js```. Let's try to render a view in this file. ```Restlio``` uses ```Swig``` as a template engine.
+By default, ```Restlio``` is looking for the ```view``` directory. You can change it from the configuration file; ```config/development.js```.
 ```js
   boot: {
       view: {
@@ -630,7 +627,7 @@ module.exports = app => {
 
 ### Static Files
 
-By default, ```restlio``` is looking for the ```public``` directory to serve static files. You can change it from the configuration file; ```config/development.js```.
+By default, ```Restlio``` is looking for the ```public``` directory to serve static files. You can change it from the configuration file; ```config/development.js```.
 ```js
   boot: {
     'static': {
@@ -737,7 +734,7 @@ You will receive a ```204 NoContent``` response to a successful request that won
 
 ## Detailed Look at ACL
 
-```restlio``` has an ```ACL (Access Control Lists)``` protection on the resources. If you don't have a proper permission on a resource, you will receive a ```403``` error response.
+```Restlio``` has an ```ACL (Access Control Lists)``` protection on the resources. If you don't have a proper permission on a resource, you will receive a ```403``` error response.
 You can create any role you want, and select the methods you want to give access to any resources; such as, ```get```, ```post```, ```put```, ```delete```.   
 You can use the admin UI for this process. You can create the role from ```System->Roles``` page, and then create the action from ```System->Actions``` page.
 Just fill in the form; select the ```Role```, the ```Object``` (resource) and the ```Action``` (HTTP methods) fields.  
@@ -773,7 +770,7 @@ Not documented
 
 ## Models
 
-Models are the core of the ```restlio``` architecture. ```restlio``` basically uses ```Mongoose``` models; 
+Models are the core of the ```Restlio``` architecture. ```Restlio``` basically uses ```Mongoose``` models; 
 thus, you can use all abilities of the ```Mongoose``` models, such as, ```Mongoose``` plugins, hooks, validations, etc.
 
 ## Field Options
@@ -792,7 +789,7 @@ You can use all ```Mongoose``` field options. ```Mongoose``` based options are;
 - **```min```** number, date  
 - **```expires```** date  
 
-The list of other ```restlio``` based field options are;   
+The list of other ```Restlio``` based field options are;   
 - **```alias```** ```Mongodb``` key names are very important. Use the smallest keys possible, use the ```alias``` option when using ```REST API```. For example;  
 ```js
 var Schema = {
@@ -928,7 +925,7 @@ d_u : {type: Mixed, alias: 'data_users', from: 'System_Users'},
 
 #### Document Owner Protection
 
-```restlio``` has an ```ACL``` protection on the resources, but those are basically the permissions on the resources according to the ```HTTP``` methods.  
+```Restlio``` has an ```ACL``` protection on the resources, but those are basically the permissions on the resources according to the ```HTTP``` methods.  
 With this kind of protection the ownership of the document is not guaranteed.
 If you have a ```users``` or a ```profiles``` field on your model, and if you want to guarantee that the owner of the request is also the owner of the document,
 then you have to use the ```Owner``` key. Just set the ```users``` (alias: 'users') and the ```profiles``` (profile: {alias: 'profiles'}) fields and 
@@ -1084,7 +1081,7 @@ var PostSchema = app.libpost.model.loader.mongoose(Schema, {
 
 ### Predefined Models
 
-```restlio``` has a bunch of predefined models. They are used in the ```restlio``` system, for example user registration.
+```Restlio``` has a bunch of predefined models. They are used in the ```Restlio``` system, for example user registration.
 You can use any predefined model you want, or use them as a reference on your models, it's up to you.
 
 #### System Models 
@@ -1105,32 +1102,32 @@ If you want to cache your data on ```Redis``` for faster response times, you can
 
 ## Built-in Middlewares
 
-```restlio``` has lots of built-in middlewares to simplify your work. 
+```Restlio``` has lots of built-in middlewares to simplify your work. 
 Most of them are included by default. You have to enable some of the middlewares in order to use them.
 
 ### Express Middlewares
 
-1. The ```REST API``` part of ```restlio``` uses these ```Express``` middlewares:  
+1. The ```REST API``` part of ```Restlio``` uses these ```Express``` middlewares:  
    ```body-parser```, ```morgan```, ```cors```. 
    
-2. The ```Web application``` part of ```restlio``` uses these ```Express``` middlewares.
+2. The ```Web application``` part of ```Restlio``` uses these ```Express``` middlewares.
    ```swig``` as a template engine, ```compression```, ```static```, ```cookie-parser```,
-   ```express-session``` with ```connect-redis```, ```connect-flash```, ```serve-favicon``` and ```passport```.
+   ```express-session``` with ```connect-redis```, ```connect-flash``` and ```serve-favicon```.
 
-### restlio Middlewares
+### Restlio Middlewares
 
-```restlio``` has a bunch of middlewares used internally. They are used on the resource endpoints, authentication endpoints, etc.
+```Restlio``` has a bunch of middlewares used internally. They are used on the resource endpoints, authentication endpoints, etc.
 Feel free to use them on your endpoints. You can find them in the ```middle``` directory, and you can use a middleware like this; ```app.middle.acl```.
 
 ## Admin UI
 
-```restlio``` has an ```admin UI```, generated from the models automatically. Write your models and start to manage your data immediately. 
+```Restlio``` has an ```admin UI```, generated from the models automatically. Write your models and start to manage your data immediately. 
 You can also manage multiple applications from the admin UI. System models are automatically filtered with the active application ID.
 Look at the ```Admin UI Options``` section for detailed options.
 
 ## Built-in Job Queue
 
-```restlio``` has a built-in job queue based on ```Kue```. ```restlio``` uses it for some internal tasks, but you can easily use the job queue for your tasks.  
+```Restlio``` has a built-in job queue based on ```Kue```. ```Restlio``` uses it for some internal tasks, but you can easily use the job queue for your tasks.  
 You can get the ```Kue``` object like this;  
 ```js 
 ...
@@ -1176,7 +1173,7 @@ module.exports = app => {
 
 ## Built-in Cron
 
-```restlio``` uses ```cron``` under the hood for cronjobs. You can easily create a cronjob like this;
+```Restlio``` uses ```cron``` under the hood for cronjobs. You can easily create a cronjob like this;
 ```js
 module.exports = app => {
     var _cron = app.boot.cron;
@@ -1189,7 +1186,7 @@ module.exports = app => {
 
 ## Built-in Mailer
 
-```restlio``` has a built-in mailer based on ```Nodemailer```. You can easily use the mailer to send your mails.
+```Restlio``` has a built-in mailer based on ```Nodemailer```. You can easily use the mailer to send your mails.
 You can configure your mailer from the configuration file; ```config/development.js```.
 ```js
 boot: {
@@ -1224,30 +1221,13 @@ new _mailer(_transport).send({
 ...
 ```
 
-## Social Authentication
-
-```restlio``` has a built-in social authentication middleware based on ```Passport```. 
-```restlio``` simplifies the authentication process into the major social networks.
-The authentication strategies of Facebook, Foursquare, Instagram, and Twitter are implemented for now.
-```restlio``` saves or updates the user's social data to ```system.accounts``` model,
-sets the session object as ```req.session.social```, and redirects the page to the success or failure endpoints that is configured before in the ```config/development.js```.
-
 ## File Uploads
 Not documented
 
 ## On the Fly Image Resizer
 Not documented
 
-## Built-in URL Shortener Service
-Not documented
-
-## Built-in RSS Feed Parser
-Not documented
-
 ## Data Synchronization
-Not documented
-
-## Socket.io Support
 Not documented
 
 ## Oauth

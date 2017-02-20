@@ -1,9 +1,7 @@
-const async = require('async');
-const dot   = require('dotty');
-const _     = require('underscore');
+const dot = require('dotty');
+const _   = require('underscore');
 
 module.exports = app => {
-
     const _env      = app.get('env');
     const _log      = app.lib.logger;
     const _conf     = app.config[_env];
@@ -33,7 +31,7 @@ module.exports = app => {
         iex : {type: Date, required: true, alias: 'invite_expires'},
         dt  : {type: String, required: true, alias: 'detail'},
         es  : {type: String, default: 'Y', enum: ['Y', 'N'], alias: 'email_sent', index: true},
-        st  : {type: String, default: 'AC', enum: ['WA', 'AC', 'DC'], alias: 'status', index: true}
+        st  : {type: String, default: 'AC', enum: ['WA', 'AC', 'DC'], alias: 'status', index: true},
     };
 
     /**
@@ -46,8 +44,8 @@ module.exports = app => {
         options: [
             {label: 'Waiting', value: 'WA'},
             {label: 'Accepted', value: 'AC'},
-            {label: 'Declined', value: 'DC'}
-        ]
+            {label: 'Declined', value: 'DC'},
+        ],
     };
 
     /**
@@ -63,18 +61,18 @@ module.exports = app => {
             plural   : 'System Invites',
             columns  : ['email'],
             main     : 'email',
-            perpage  : 25
+            perpage  : 25,
         },
         Owner: {
             field : 'ir',
             alias : 'inviter',
             protect : {
-                'get': true,
-                'getid': true,
-                'post': true,
-                'put': true
-            }
-        }
+                get: true,
+                getid: true,
+                post: true,
+                put: true,
+            },
+        },
     });
 
     // plugins
@@ -90,11 +88,9 @@ module.exports = app => {
      */
 
     InviteSchema.pre('save', function(next) {
-
         const self = this;
         self._isNew = self.isNew;
         next();
-
     });
 
     /**
@@ -104,22 +100,21 @@ module.exports = app => {
      */
 
     InviteSchema.post('save', function(doc) {
-
         // eğer app için invite moderation aktif ise status değişimine bak, onaylandıysa mail at
         if( ! this._isNew ) {
-
             // get app data
             const Apps = _mongoose.model('System_Apps');
 
             Apps.findById(doc.ap, (err, apps) => {
-                if( err || ! apps )
+                if( err || ! apps ) {
                     return _log.info(_group, 'not found app data for system.invites');
+                }
 
                 const slug     = apps.s;
                 const moderate = dot.get(_conf, `app.config.${slug}.auth.invite_moderation`) ||
                                  dot.get(_conf, `auth.${slug}.auth.invite_moderation`);
 
-                if(moderate && doc.es == 'N' && doc.st == 'AC' && doc.it && doc.em) {
+                if(moderate && doc.es === 'N' && doc.st === 'AC' && doc.it && doc.em) {
                     const mailConf = dot.get(_conf, `app.mail.${slug}`) ||
                                    dot.get(_conf, `mail.${slug}`);
 
@@ -129,10 +124,9 @@ module.exports = app => {
                         app.render('email/templates/invite', {
                             baseUrl: mailConf.baseUrl,
                             endpoint: mailConf.endpoints.invite,
-                            token: doc.it
+                            token: doc.it,
                         }, (err, html) => {
-                            if(err)
-                                _log.error(_group, err);
+                            if(err) _log.error(_group, err);
 
                             if(html) {
                                 mailObj.to   = doc.em;
@@ -148,21 +142,15 @@ module.exports = app => {
                         // flag invitation as "sent"
                         doc.es = 'Y';
                         doc.save(err => {
-                            if(err)
-                                _log.error(_group, err);
+                            if(err) _log.error(_group, err);
                         });
-                    }
-                    else
+                    } else {
                         _log.info(`${_group}:MAIL_OBJ`, 'not found');
+                    }
                 }
             });
         }
-
     });
 
     return _mongoose.model('System_Invites', InviteSchema);
-
 };
-
-
-

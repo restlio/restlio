@@ -7,7 +7,6 @@ const _      = require('underscore');
 _.s          = require('underscore.string');
 
 module.exports = app => {
-
     const _env    = app.get('env');
     const _log    = app.system.logger;
     const _form   = app.lib.form;
@@ -22,15 +21,21 @@ module.exports = app => {
         'system.images',
         'system.invites',
         'system.objects',
-        'system.roles'
+        'system.roles',
     ];
+
+    // admin auth endpoints
+    app.get('/admin/login', app.lib.auth.loginForm);
+    app.post('/admin/login', app.lib.auth.login);
+    app.get('/admin/logout', app.lib.auth.logout);
 
     const _inspector = (req, redirect) => {
         const o = req.params.object;
 
         // app seçilmese de system.apps işlemleri yapılabilsin
-        if( ! req.session.app && o != 'system.apps' )
+        if( ! req.session.app && o !== 'system.apps' ) {
             return false;
+        }
 
         let m = dot.get(req.app.model, o);
 
@@ -40,7 +45,7 @@ module.exports = app => {
             if(redirect) {
                 req.flash('flash', {
                     type: 'danger',
-                    message: `${_.s.titleize(o)} not found`
+                    message: `${_.s.titleize(o)} not found`,
                 });
             }
 
@@ -52,21 +57,19 @@ module.exports = app => {
     };
 
     const sortResult = (x, y) => {
-        var t1 = x._id.getTime();
-        var t2 = y._id.getTime();
-        if (t1 < t2)
-            return -1;
-        else if (t1 == t2) 
-            return 0;
-        else 
-            return 1;
-    }
+        const t1 = x._id.getTime();
+        const t2 = y._id.getTime();
+        if (t1 < t2) return -1;
+        else if (t1 === t2) return 0;
+        return 1;
+    };
 
     // get collection graph data
     const collGraphs = (req, res, next, appSlug, colls, days) => {
         return (cb) => {
-            if( ! appSlug )
+            if( ! appSlug ) {
                 return cb(null, {});
+            }
 
             const endDate = moment().utc().add(1, 'days').startOf('day').valueOf();
             const step = 24 * 60 * 60 * 1000;
@@ -80,14 +83,15 @@ module.exports = app => {
                     const mapData = {};
                     const map = {};
                     for (var i in v) {
-                        mapData[ v[i]._id.getTime() ] = v[i];
+                        mapData[v[i]._id.getTime()] = v[i];
                     }
                     for (var ms = endDate, x = 0; x < days; x++) {
                         ms -= step;
-                        if ( ! ( ms in mapData ) ) 
+                        if ( ! ( ms in mapData ) )  {
                             map[ms] = {_id : new Date(ms), count : 0};
-                        else if(mapData[ms]) 
+                        } else if(mapData[ms]) {
                             map[ms] = {_id : new Date(ms), count : mapData[ms].count};
+                        }
                     }
                     var finalResult = [];
                     for (var xy in map) {
@@ -103,9 +107,9 @@ module.exports = app => {
     };
 
     const collCounts = (req, res, next, appSlug, colls) => {
-        return (cb) =>{
+        return (cb) => {
             async.mapLimit(colls, 4, function(coll, cb2) {
-                new _schema(`${appSlug}.${coll}`).init(req, res, next).get({'qt': 'count'}, (err, doc) => {
+                new _schema(`${appSlug}.${coll}`).init(req, res, next).get({qt: 'count'}, (err, doc) => {
                     cb2(null, doc);
                 });
             }, function(err, results) {
@@ -117,7 +121,7 @@ module.exports = app => {
     const collData = (req, res, next, appSlug, colls, days, cb) => {
         async.parallel({
             graphs: collGraphs(req, res, next, appSlug, colls, days),
-            counts: collCounts(req, res, next, appSlug, colls)
+            counts: collCounts(req, res, next, appSlug, colls),
         }, cb);
     };
 
@@ -135,8 +139,8 @@ module.exports = app => {
                 res.render('admin/v2/page/index', {
                     page: 'dashboard',
                     graphs: results.graphs,
-                    counts: results.counts
-                });    
+                    counts: results.counts,
+                });
             });
             return;
         }
@@ -158,7 +162,7 @@ module.exports = app => {
                 new _schema('system.apps').init(req, res, next).get({sort: 'name'}, (err, doc) => {
                     cb(err, doc);
                 });
-            }
+            },
         };
 
         async.parallel(a, (err, results) => {
@@ -166,30 +170,27 @@ module.exports = app => {
 
             let render = true;
 
-            if(err)
-                _log.info(err);
-            else if( ! results.u )
-                _log.info('user data not found');
-            else if(results.u.type != 'Admin')
-                _log.info('user type is not admin'); // type = Admin olanların girişine izin veriyoruz
-            else if( ! results.a )
-                _log.info('apps data not found');
-            else
-                render = false;
+            if(err) _log.info(err);
+            else if( ! results.u ) _log.info('user data not found');
+            else if(results.u.type !== 'Admin') _log.info('user type is not admin'); // type = Admin olanların girişine izin veriyoruz
+            else if( ! results.a ) _log.info('apps data not found');
+            else render = false;
 
-            if(render)
+            if(render) {
                 return res.render('admin/v2/page/index');
+            }
 
             // set user session data
             req.session.adminUser = results.u;
 
             // set apps session data
             req.session.apps = {};
-            _.each(results.a, (value, key) => {
+            _.each(results.a, (value) => {
                 req.session.apps[value._id.toString()] = value;
 
-                if(value.slug == 'system')
+                if(value.slug === 'system') {
                     req.session.systemApp = value;
+                }
             });
 
             // set resources session data
@@ -198,17 +199,19 @@ module.exports = app => {
                 const sorted = Object.keys(results.r).sort();
                 const obj    = {};
 
-                _.each(sorted, (value, key) => {
+                _.each(sorted, (value) => {
                     const sortedArr = value.split('_');
                     const modelName = value.replace('_', '.');
 
                     // eğer model aktif değilse resource'u alma
-                    if( ! dot.get(req.app.model, modelName) )
+                    if( ! dot.get(req.app.model, modelName) ) {
                         return;
+                    }
 
                     if(sortedArr.length > 1) {
-                        if( ! obj[sortedArr[0]] )
+                        if( ! obj[sortedArr[0]] ) {
                             obj[sortedArr[0]] = {};
+                        }
 
                         obj[sortedArr[0]][sortedArr[1]] = results.r[value];
                     }
@@ -220,9 +223,10 @@ module.exports = app => {
 
             // set default app
             if(_conf.default) {
-                _.each(req.session.apps, (v, k) => {
-                    if(v.slug === _conf.default)
+                _.each(req.session.apps, (v) => {
+                    if(v.slug === _conf.default) {
                         req.session.app = v;
+                    }
                 });
             }
 
@@ -233,14 +237,14 @@ module.exports = app => {
                 res.render('admin/v2/page/index', {
                     page: 'dashboard',
                     graphs: results.graphs,
-                    counts: results.counts
-                });    
+                    counts: results.counts,
+                });
             });
         });
     });
 
     // select app
-    app.get('/admin/app/:id', (req, res, next) => {
+    app.get('/admin/app/:id', (req, res) => {
         const currApp = dot.get(req.session, `apps.${req.params.id}`);
         if(currApp) req.session.app = currApp;
         res.redirect('/admin');
@@ -251,8 +255,7 @@ module.exports = app => {
         const o    = req.params.object;
         const insp = _inspector(req);
 
-        if( ! insp )
-            return res.redirect('/admin');
+        if( ! insp ) return res.redirect('/admin');
 
         try {
             const filterForm = dot.get(insp, 'Forms.filter') || false;
@@ -268,14 +271,14 @@ module.exports = app => {
                     // get filters
                     new _schema('system.filters').init(req, res, next).get({
                         users: req.session.adminUser._id,
-                        object: o
+                        object: o,
                     }, (err, filters) => {
                         cb(null, filters);
                     });
-                }
+                },
             };
 
-            if(o == 'system.images') {
+            if(o === 'system.images') {
                 a.upload = cb => {
                     // render upload box
                     app.render('admin/v2/upload/box', {object: o}, (err, upload) => {
@@ -285,8 +288,7 @@ module.exports = app => {
             }
 
             async.parallel(a, (err, results) => {
-                if(err)
-                    _log.error(err);
+                if(err) _log.error(err);
 
                 const objParts = o.split('.');
                 const _slug    = objParts[0];
@@ -306,12 +308,11 @@ module.exports = app => {
                         upload  : results.upload,
                         graphs  : collResults.graphs[_object],
                         counts  : collResults.counts[_object],
-                        _object
+                        _object,
                     });
                 });
             });
-        }
-        catch(e) {
+        } catch(e) {
             _log.error(e.stack);
             res.redirect('/admin');
         }
@@ -323,41 +324,37 @@ module.exports = app => {
         const insp     = _inspector(req);
         const nocreate = dot.get(insp, 'Options.nocreate');
 
-        if( ! insp || nocreate )
-            return res.redirect('/admin');
+        if( ! insp || nocreate ) return res.redirect('/admin');
 
         try {
             const newForm = dot.get(insp, 'Forms.new') || false;
 
             new _form(o).init(req, res, next).prefix('/admin/p/').render(newForm, (err, form) => {
-                if(err)
-                    _log.error(err);
+                if(err) _log.error(err);
 
                 res.render('admin/v2/page/object/new', {
                     action : 'save',
                     opts   : insp.Options,
                     form,
                     err,
-                    object : o
+                    object : o,
                 });
             });
-        }
-        catch(e) {
+        } catch(e) {
             _log.error(e.stack);
             res.redirect('/admin');
         }
     });
 
-    // form for sub object (array of objects) 
+    // form for sub object (array of objects)
     app.post('/admin/form/:object/:alias/:index?', (req, res, next) => {
         const o    = req.params.object;
         const insp = _inspector(req);
 
-        if( ! insp )
-            return res.redirect('/admin');
+        if( ! insp ) return res.redirect('/admin');
 
         const alias = req.params.alias;
-        const index = parseInt(req.params.index);
+        const index = parseInt(req.params.index, 10);
         const id    = req.query.id;
         
         try {
@@ -366,13 +363,14 @@ module.exports = app => {
                 const addForm = (_form, a, o, alias, index, data) => {
                     a.push(cb => {
                         new _form(o, {object: alias, index, data}).init(req, res, next).prefix('/admin/p/').render(false, (err, form) => {
-                            if(form)
+                            if(form) {
                                 form = `<div class="col-md-4"><div class="well"><a href="javascript:void(0)" type="button" class="close" aria-label="Close" onclick="closeObjectItem(this);"><span aria-hidden="true">&times;</span></a>${form}</div></div>`;
+                            }
                             
                             cb(null, form);
                         });
-                    });  
-                };   
+                    });
+                };
                 
                 new _schema(o, {format: false}).init(req, res, next).getById(id, (err, doc) => {
                     // concat forms by index and data
@@ -387,23 +385,22 @@ module.exports = app => {
                         async.series(a, (err, results) => {
                             let response = '';
                             
-                            if(results && results.length)
+                            if(results && results.length) {
                                 response = results.join(' ');
+                            }
                             
                             res.json({index: i, html: response});
                         });
-                    }
-                    else
+                    } else {
                         res.json({html: ''});
+                    }
                 });
-            }
-            else {
+            } else {
                 new _form(o, {object: alias, index}).init(req, res, next).prefix('/admin/p/').render(false, (err, form) => {
                     res.send(form);
-                });                
+                });
             }
-        }
-        catch(e) {
+        } catch(e) {
             _log.error(e.stack);
             res.redirect('/admin');
         }
@@ -414,36 +411,34 @@ module.exports = app => {
         const o        = req.params.object;
         const insp     = _inspector(req);
 
-        if( ! insp )
-            return res.redirect('/admin');
+        if( ! insp ) return res.redirect('/admin');
 
         try {
             const parentId = req.query.parentId || '{null}';
             const obj      = {
                 parentId,
-                sort: 'order'
+                sort: 'order',
             };
 
             // istenecek field'lar (relation, nested vs. field'larda bütün data'yı çekmesin )
-            if(insp.Options.columns)
+            if(insp.Options.columns) {
                 obj.f = insp.Options.columns.join(',');
+            }
 
             // default 10 tane getiriyor, 1000 tane göster
             obj.l = 1000;
 
             // get children
             new _schema(o).init(req, res, next).get(obj, (err, children) => {
-                if(err)
-                    _log.error(err);
+                if(err) _log.error(err);
 
                 res.render('admin/v2/page/object/partial/list/nested', {
                     children,
-                    opts     : insp.Options,
-                    parentId
+                    opts: insp.Options,
+                    parentId,
                 });
             });
-        }
-        catch(e) {
+        } catch(e) {
             _log.error(e.stack);
             res.redirect('/admin');
         }
@@ -454,35 +449,33 @@ module.exports = app => {
         const o    = req.params.object;
         const insp = _inspector(req);
 
-        if( ! insp )
-            return res.redirect('/admin');
+        if( ! insp ) return res.redirect('/admin');
 
         try {
             const obj = {};
-            if(req.body.order)
+            if(req.body.order) {
                 obj.order = req.body.order;
+            }
 
             if(req.body.parentId) {
-                if(req.body.parentId == 'root')
+                if(req.body.parentId === 'root') {
                     obj.parentId = '';
-                else
+                } else {
                     obj.parentId = req.body.parentId;
+                }
             }
 
             new _schema(o).init(req, res, next).put(req.params.id, obj, (err, children) => {
-                if(err)
-                    _log.error(err);
-
+                if(err) _log.error(err);
                 res.json({});
             });
-        }
-        catch(e) {
+        } catch(e) {
             _log.error(e.stack);
             res.redirect('/admin');
         }
     });
 
-    app.get('/admin/o/:object/save', (req, res, next) => {
+    app.get('/admin/o/:object/save', (req, res) => {
         res.redirect(`/admin/o/${req.params.object}/new`);
     });
 
@@ -492,8 +485,7 @@ module.exports = app => {
         const insp     = _inspector(req);
         const nocreate = dot.get(insp, 'Options.nocreate');
 
-        if( ! insp || nocreate )
-            return res.redirect('/admin');
+        if( ! insp || nocreate ) return res.redirect('/admin');
 
         try {
             // set app id
@@ -501,12 +493,12 @@ module.exports = app => {
             req.body.apps = req.session.app._id;
 
             // set user id
-            if(o == 'system.filters')
+            if(o === 'system.filters') {
                 req.body.users = req.session.adminUser._id;
+            }
 
             new _schema(o).init(req, res, next).dateFormat().post(req.body, (err, doc) => {
-                if(err)
-                    _log.error(err);
+                if(err) _log.error(err);
 
                 if( ! err && doc ) {
                     req.flash('flash', {type: 'success', message: `${_.s.titleize(o)} saved`});
@@ -516,20 +508,18 @@ module.exports = app => {
                 const newForm = dot.get(insp, 'Forms.new') || false;
 
                 new _form(o).init(req, res, next).prefix('/admin/p/').data(req.body).render(newForm, (formErr, form) => {
-                    if(formErr)
-                        _log.error(formErr);
+                    if(formErr) _log.error(formErr);
 
                     res.render('admin/v2/page/object/new', {
                         action : 'save',
                         opts   : insp.Options,
                         form,
                         err    : err || formErr,
-                        object : o
+                        object : o,
                     });
                 });
             });
-        }
-        catch (e) {
+        } catch (e) {
             _log.error(e.stack);
             res.redirect('/admin');
         }
@@ -542,27 +532,27 @@ module.exports = app => {
         const insp   = _inspector(req);
         const noedit = dot.get(insp, 'Options.noedit');
 
-        if( ! insp || noedit )
-            return res.redirect('/admin');
+        if( ! insp || noedit ) return res.redirect('/admin');
 
         try {
             // params
             const params = {
                 _id: req.params.id,
-                qt: 'one'
+                qt: 'one',
             };
 
             // set app id
-            if(_system.includes(o))
+            if(_system.includes(o)) {
                 params.apps = req.session.app._id;
+            }
 
             // set user id
-            if(o == 'system.filters')
+            if(o === 'system.filters') {
                 params.users = req.session.adminUser._id;
+            }
 
             new _schema(o, {format: false}).init(req, res, next).get(params, (err, doc) => {
-                if(err)
-                    _log.error(err);
+                if(err) _log.error(err);
 
                 if( err || ! doc ) {
                     req.flash('flash', {type: 'danger', message: `${_.s.titleize(o)} not found`});
@@ -572,8 +562,7 @@ module.exports = app => {
                 const editForm = dot.get(insp, 'Forms.edit') || dot.get(insp, 'Forms.new') || false;
 
                 new _form(o, {edit: true}).init(req, res, next).prefix('/admin/p/').data(doc).render(editForm, (err, form) => {
-                    if(err)
-                        _log.error(err);
+                    if(err) _log.error(err);
 
                     res.render('admin/v2/page/object/new', {
                         action : 'update',
@@ -581,18 +570,17 @@ module.exports = app => {
                         id,
                         form,
                         err,
-                        object : o
+                        object : o,
                     });
                 });
             });
-        }
-        catch (e) {
+        } catch (e) {
             _log.error(e.stack);
             res.redirect('/admin');
         }
     });
 
-    app.get('/admin/o/:object/update/:id', (req, res, next) => {
+    app.get('/admin/o/:object/update/:id', (req, res) => {
         res.redirect(`/admin/o/${req.params.object}/edit/${req.params.id}`);
     });
 
@@ -603,21 +591,21 @@ module.exports = app => {
         const insp   = _inspector(req);
         const noedit = dot.get(insp, 'Options.noedit');
 
-        if( ! insp || noedit )
-            return res.redirect('/admin');
+        if( ! insp || noedit ) return res.redirect('/admin');
 
         try {
             // set app id
-            if(_system.includes(o))
+            if(_system.includes(o)) {
                 req.body.apps = req.session.app._id;
+            }
 
             // set user id
-            if(o == 'system.filters')
+            if(o === 'system.filters') {
                 req.body.users = req.session.adminUser._id;
+            }
 
             new _schema(o).init(req, res, next).dateFormat().put(id, req.body, (err, doc) => {
-                if(err)
-                    _log.error(err);
+                if(err) _log.error(err);
 
                 if( ! err || doc ) {
                     req.flash('flash', {type: 'success', message: `${_.s.titleize(o)} updated`});
@@ -627,8 +615,7 @@ module.exports = app => {
                 const editForm = dot.get(insp, 'Forms.edit') || dot.get(insp, 'Forms.new') || false;
 
                 new _form(o, {edit: true}).init(req, res, next).prefix('/admin/p/').data(req.body).render(editForm, (formErr, form) => {
-                    if(formErr)
-                        _log.error(formErr);
+                    if(formErr) _log.error(formErr);
 
                     res.render('admin/v2/page/object/new', {
                         action : 'update',
@@ -636,12 +623,11 @@ module.exports = app => {
                         id,
                         form,
                         err    : err || formErr,
-                        object : o
+                        object : o,
                     });
                 });
             });
-        }
-        catch (e) {
+        } catch (e) {
             _log.error(e);
             res.redirect('/admin');
         }
@@ -658,35 +644,33 @@ module.exports = app => {
     // remove ids
     app.get('/admin/o/:object/remove/:ids', (req, res, next) => {
         const o        = req.params.object;
-        let ids      = req.params.ids;
+        let ids        = req.params.ids;
         const insp     = _inspector(req);
         const nodelete = dot.get(insp, 'Options.nodelete');
 
-        if( ! insp || nodelete )
-            return res.redirect('/admin');
+        if( ! insp || nodelete ) return res.redirect('/admin');
 
         try {
             ids = ids.split(',');
 
-            if( ! ids.length )
+            if( ! ids.length ) {
                 return res.redirect(`/admin/o/${o}`);
+            }
 
             const a = [];
 
             for(const i in ids) {
-                if(ids.hasOwnProperty(i))
+                if(ids.hasOwnProperty(i)) {
                     a.push(deleteIds(ids[i], req, res, next));
+                }
             }
 
-            async.parallel(a, (err, results) => {
-                if(err)
-                    _log.error(err);
-
+            async.parallel(a, (err) => {
+                if(err) _log.error(err);
                 req.flash('flash', {type: 'success', message: `${_.s.titleize(o)} removed`});
                 res.redirect(`/admin/o/${o}`);
             });
-        }
-        catch (e) {
+        } catch (e) {
             _log.error(e.stack);
             res.redirect('/admin');
         }
@@ -698,47 +682,43 @@ module.exports = app => {
         let ids    = req.query.ids;
         const insp = _inspector(req);
 
-        if( ! insp )
-            return res.redirect('/admin');
+        if( ! insp ) return res.redirect('/admin');
 
         try {
-            if(ids)
+            if(ids) {
                 ids = ids.split(',');
-            else
+            } else {
                 return res.redirect(`/admin/o/${o}`);
+            }
 
             const params = {where:
-                {_id: {$in: ids}}
+                {_id: {$in: ids}},
             };
 
-            new _schema(o).init(req, res, next).put(params, {is_enabled: 'Y'}, (err, doc) => {
-                if(err)
-                    _log.error(err);
-
+            new _schema(o).init(req, res, next).put(params, {is_enabled: 'Y'}, (err) => {
+                if(err) _log.error(err);
                 req.flash('flash', {type: 'success', message: `${_.s.titleize(o)} enabled`});
                 res.redirect(`/admin/o/${o}`);
             });
-        }
-        catch (e) {
+        } catch (e) {
             _log.error(e.stack);
             res.redirect('/admin');
         }
     });
 
-    app.get('/admin/o/:object/build-index', (req, res, next) => {
+    app.get('/admin/o/:object/build-index', (req, res) => {
         const o    = req.params.object;
         const ids  = req.query.ids;
         const insp = _inspector(req);
 
-        if( ! insp || ! insp.Searchable )
-            return res.redirect('/admin');
+        if( ! insp || ! insp.Searchable ) return res.redirect('/admin');
 
         _jobs.create('set-index-job', {
             title: `Set ${o} index job`,
             params: {
                 type   : 'set-index-job',
-                object : o
-            }
+                object : o,
+            },
         }).attempts(3).save();
 
         req.flash('flash', {type: 'success', message: `${_.s.titleize(o)} index is building`});
@@ -754,36 +734,35 @@ module.exports = app => {
         const o    = req.params.object;
         const insp = _inspector(req, false);
 
-        if( ! insp )
-            return res.json({});
+        if( ! insp ) return res.json({});
 
         try {
             // delete cache key
             delete req.query._;
 
             // set app id
-            if(_system.includes(o))
+            if(_system.includes(o)) {
                 req.query.apps = `{in}${req.session.app._id}`;
+            }
 
             // system.actions için sistem objelerine erişim izni olabilir
-            if(req.query.apps && o == 'system.objects' && req.session.systemApp)
+            if(req.query.apps && o === 'system.objects' && req.session.systemApp) {
                 req.query.apps += `,${req.session.systemApp._id.toString()}`;
+            }
 
             // istenecek field'lar (relation, nested vs. field'larda bütün data'yı çekmesin )
-            if(insp.Options.columns)
+            if(insp.Options.columns) {
                 req.query.f = insp.Options.columns.join(',');
+            }
 
             // obje sayısı 10'dan fazla olabilir
             req.query.limit = 1000;
 
             new _schema(o).init(req, res, next).get(req.query, (err, doc) => {
-                if(err)
-                    _log.error(err);
-
+                if(err) _log.error(err);
                 res.json(doc || {});
             });
-        }
-        catch (e) {
+        } catch (e) {
             _log.error(e.stack);
             res.redirect('/admin');
         }
@@ -793,8 +772,7 @@ module.exports = app => {
     app.get('/admin/p/:object/table', (req, res, next) => {
         const insp = _inspector(req, false);
 
-        if( ! insp )
-            return res.json({total: 0, rows: 0});
+        if( ! insp ) return res.json({total: 0, rows: 0});
 
         try {
             let o = req.params.object;
@@ -805,21 +783,24 @@ module.exports = app => {
             if(q._) dot.remove(q, '_');
             
             // set app id
-            if(req.session.app && _system.includes(o))
+            if(req.session.app && _system.includes(o)) {
                 p.apps = req.session.app._id;
+            }
 
-	        // check apps for system.users
-	        if(req.session.app && o == 'system.users') {
-	            const modelName = `${req.session.app.slug}.profiles`;
-		        const mProfile  = dot.get(req.app.model, modelName);
-		     
-		        if(mProfile)
-			        p.apps = req.session.app._id;
-	        }
-	        
+            // check apps for system.users
+            if(req.session.app && o === 'system.users') {
+                const modelName = `${req.session.app.slug}.profiles`;
+                const mProfile  = dot.get(req.app.model, modelName);
+                
+                if(mProfile) {
+                    p.apps = req.session.app._id;
+                }
+            }
+            
             // set user id
-            if(req.session.adminUser && o == 'system.filters')
+            if(req.session.adminUser && o === 'system.filters') {
                 p.users = req.session.adminUser._id;
+            }
 
             // query type
             p.qt = 'findcount';
@@ -843,28 +824,31 @@ module.exports = app => {
                 p.s = q.sort;
                 dot.remove(q, 'sort');
                 
-                if(q.order == 'desc') {
+                if(q.order === 'desc') {
                     p.s = `-${p.s}`;
                     dot.remove(q, 'order');
                 }
-            }
-            else if(insp.Options.sort)
+            } else if(insp.Options.sort) {
                 p.s = insp.Options.sort;
+            }
 
             // remove order param
-            if(q.order) 
+            if(q.order) {
                 dot.remove(q, 'order');
+            }
             
             if(insp.Options.columns) {
                 let extra;
-                if(insp.Options.extra)
+                if(insp.Options.extra) {
                     extra = insp.Options.extra.join(',');
+                }
 
                 // istenecek field'lar
                 p.f = insp.Options.columns.join(',');
 
-                if(extra)
+                if(extra) {
                     p.f += `,${extra}`;
+                }
 
                 // istenecek field'lar içinde populate edilecek field'lar var mı kontrol ediyoruz
                 const populate = [];
@@ -877,46 +861,48 @@ module.exports = app => {
                         // field alias'ının karşılık geldiği bir field key var mı kontrol ediyoruz
                         if(insp.Alias[currCol]) {
                             // key'e karşılık gelen referans var mı kontrol ediyoruz
-                            const currRef = insp.Refs[ insp.Alias[currCol] ];
+                            const currRef = insp.Refs[insp.Alias[currCol]];
 
                             // bu key'e karşılık gelen bir referans varsa direkt key'i gönderiyoruz
-                            if(currRef)
+                            if(currRef) {
                                 populate.push(insp.Alias[currCol]);
+                            }
                         }
                     }
                 }
 
-                if(populate.length)
+                if(populate.length) {
                     p.p = populate.join(',');
+                }
             }
 
             // decode filters
             let filter;
             if(q.filter) {
-                filter = app.lib.base64.decode(q.filter);
+                filter = new Buffer(q.filter, 'base64').toString('ascii');
                 filter = qs.parse(filter);
                 p      = extend(p, filter);
                 dot.remove(q, 'filter');
             }
 
             // apply other query parameters
-            if(Object.keys(q).length)
+            if(Object.keys(q).length) {
                 p = extend(p, q);
+            }
 
             // execute query
             new _schema(o).init(req, res, next).get(p, (err, doc) => {
-                if(err)
-                    _log.error(err);
+                if(err) _log.error(err);
 
-                o = q= p = filter = null;
+                o = q = p = filter = null;
 
-                if( err || ! doc )
+                if( err || ! doc ) {
                     return res.json({total: 0, rows: 0});
+                }
 
                 res.json(doc);
             });
-        }
-        catch (e) {
+        } catch (e) {
             _log.error(e.stack);
             res.redirect('/admin');
         }
@@ -956,8 +942,7 @@ module.exports = app => {
         const o    = req.params.object;
         const insp = _inspector(req);
 
-        if( ! insp )
-            return res.json({err: true});
+        if( ! insp ) return res.json({err: true});
 
         try {
             const a = {};
@@ -972,7 +957,7 @@ module.exports = app => {
                 new _schema('system.filters').init(req, res, next).get({
                     apps: req.session.app._id,
                     users: req.session.adminUser._id,
-                    object: o
+                    object: o,
                 }, (err, filters) => {
                     cb(err, filters);
                 });
@@ -987,27 +972,24 @@ module.exports = app => {
                 // decode filter
                 let filter;
                 try {
-                    filter = app.lib.base64.decode(results.get_filter.filter);
+                    filter = new Buffer(results.get_filter.filter, 'base64').toString('ascii');
                     filter = qs.parse(filter);
-                }
-                catch (e) {}
+                } catch (e) {}
 
                 _log.info('load filter: ', filter);
 
                 const filterForm = dot.get(insp, 'Forms.filter') || false;
 
                 new _form(o, {filter: true}).init(req, res, next).prefix('/admin/p/').data(filter).render(filterForm, (err, form) => {
-                    if(err)
-                        _log.error(err);
+                    if(err) _log.error(err);
 
                     res.render('admin/v2/page/object/filter', {
                         sfilter: form,
-                        filters: results.filters
+                        filters: results.filters,
                     });
                 });
             });
-        }
-        catch(e) {
+        } catch(e) {
             _log.error(e.stack);
             res.json({err: true});
         }
@@ -1019,27 +1001,24 @@ module.exports = app => {
         const o    = req.params.object;
         const insp = _inspector(req);
 
-        if( ! insp )
-            return res.json({err: true});
+        if( ! insp ) return res.json({err: true});
 
         try {
             req.body.apps  = req.session.app._id; // set app id
             req.body.users = req.session.adminUser._id; // set user id
 
             new _schema('system.filters').init(req, res, next).post(req.body, (err, doc) => {
-                if(err)
-                    _log.error(err);
+                if(err) _log.error(err);
 
-                if( ! err && doc )
+                if( ! err && doc ) {
                     return res.json({err: false});
+                }
 
                 res.json({err: true, detail: err});
             });
-        }
-        catch (e) {
+        } catch (e) {
             _log.error(e.stack);
             res.json({err: true});
         }
     });
-
 };

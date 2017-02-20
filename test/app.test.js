@@ -38,6 +38,6 @@ describe('app',function() {
 });
 
 /**
- * @TODO
+ * TODO:
  * tests, tests, tests, more tests...
  */

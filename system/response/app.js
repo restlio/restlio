@@ -5,7 +5,7 @@ function responseHandler(name, code, data, res) {
     data = data || null;
 
     const response = {
-        meta: {name, code}, data
+        meta: {name, code}, data,
     };
 
     res.status(code).json(response);
@@ -16,7 +16,8 @@ exports.OK = (message, res) => {
     responseHandler('OK', 200, message, res);
 };
 
-// Response to a POST that results in a creation. Should be combined with a Location header pointing to the location of the new resource
+// Response to a POST that results in a creation.
+// Should be combined with a Location header pointing to the location of the new resource
 exports.Created = (message, res) => {
     responseHandler('Created', 201, message, res);
 };
@@ -29,7 +30,8 @@ exports.NoContent = (message, res) => {
 // --- The request is malformed, such as if the body does not parse
 exports.BadRequest = Error.extend('BadRequest', 400);
 
-// --- When no or invalid authentication details are provided. Also useful to trigger an auth popup if the API is used from a browser
+// --- When no or invalid authentication details are provided.
+// --- Also useful to trigger an auth popup if the API is used from a browser
 exports.Unauthorized = Error.extend('Unauthorized', 401);
 
 // --- When authentication succeeded but authenticated user doesn't have access to the resource
@@ -41,7 +43,8 @@ exports.NotFound = Error.extend('NotFound', 404);
 // --- When an HTTP method is being requested that isn't allowed for the authenticated user
 exports.MethodNotAllowed = Error.extend('MethodNotAllowed', 405);
 
-// --- Indicates that the resource at this end point is no longer available. Useful as a blanket response for old API versions
+// --- Indicates that the resource at this end point is no longer available.
+// --- Useful as a blanket response for old API versions
 exports.Gone = Error.extend('Gone', 410);
 
 // --- If incorrect content type was provided as part of the request
@@ -55,9 +58,3 @@ exports.TooManyRequests = Error.extend('TooManyRequests', 429);
 
 // --- Internal server error
 exports.InternalServerError = Error.extend('InternalServerError', 500);
-
-
-
-
-
-

@@ -1,5 +1,4 @@
 module.exports = app => {
-
     const _env      = app.get('env');
     const _log      = app.lib.logger;
     const _mongoose = app.core.mongo.mongoose;
@@ -23,7 +22,7 @@ module.exports = app => {
         apps         : {type: ObjectId, required: true, ref: 'System_Apps', alias: 'apps'},
         clientId     : {type: String, unique: true, alias: 'clientId'},
         clientSecret : {type: String, index: true, alias: 'clientSecret'},
-        redirectUri  : {type: String, required: true, alias: 'redirectUri', pattern: 'url'}
+        redirectUri  : {type: String, required: true, alias: 'redirectUri', pattern: 'url'},
     };
 
     /**
@@ -51,8 +50,8 @@ module.exports = app => {
             plural   : 'Clients',
             columns  : ['name', 'apps', 'redirectUri', 'clientId', 'clientSecret'],
             main     : 'name',
-            perpage  : 25
-        }
+            perpage  : 25,
+        },
     });
 
     // plugins
@@ -65,19 +64,19 @@ module.exports = app => {
      */
 
     ClientsSchema.pre('save', function(next) {
-
         const self = this;
 
         if(self.isNew) {
-            if( ! self.clientId )
+            if( ! self.clientId ) {
                 self.clientId = _helper.random(32);
+            }
 
-            if( ! self.clientSecret )
+            if( ! self.clientSecret ) {
                 self.clientSecret = _helper.random(32);
+            }
         }
 
         next();
-
     });
 
     /**
@@ -87,10 +86,8 @@ module.exports = app => {
      */
 
     ClientsSchema.post('save', function(doc) {
-
         const self = this;
         if(self._isNew) {}
-
     });
 
     /**
@@ -103,8 +100,9 @@ module.exports = app => {
         const Clients = _mongoose.model('Oauth_Clients');
         const params  = {clientId};
 
-        if (clientSecret !== null)
+        if (clientSecret !== null) {
             params.clientSecret = clientSecret;
+        }
 
         Clients.findOne(params, cb);
     });
@@ -115,5 +113,4 @@ module.exports = app => {
     });
 
     return _mongoose.model('Oauth_Clients', ClientsSchema);
-
 };

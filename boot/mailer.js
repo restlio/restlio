@@ -1,12 +1,12 @@
 const mailer = require('nodemailer');
-const _      = require('underscore');
+const _ = require('underscore');
 
 module.exports = app => {
-
-    const _conf = app.lib.bootConf(app, 'mailer');
-
-    if( ! _conf )
+    const _conf = app.lib.utils.helper.bootConf('mailer');
+    
+    if( ! _conf ) {
         return false;
+    }
 
     // birden fazla config varsa hepsi için client oluşturuyoruz
     if( ! _conf.service ) {
@@ -19,10 +19,4 @@ module.exports = app => {
     }
     
     return mailer.createTransport(_conf);
-
 };
-
-
-
-
-

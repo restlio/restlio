@@ -15,12 +15,11 @@ class LibpostModelLoader {
             this._inspector = app.lib.inspector;
             this._mongo = app.core.mongo;
             this._mongoose = app.core.mongo.mongoose;
-            this._worker = parseInt(process.env.worker_id);
+            this._worker = parseInt(process.env.worker_id, 10);
             this._syncConf = app.config[this._env].sync;
             this._emitter = app.lib.schemaEmitter;
             this._denormalize = app.lib.denormalize;
-        }
-        catch(e) {
+        } catch(e) {
             self._log.error(group, e.stack);
         }
         
@@ -38,8 +37,9 @@ class LibpostModelLoader {
             const Schema = this._mongo.db.Schema(schema);
 
             let alias = {};
-            if(options.ArrayOfObjects)
+            if(options.ArrayOfObjects) {
                 alias = options.ArrayOfObjects;
+            }
             
             // create inspector
             const Inspector  = new this._inspector(schema, alias).init();
@@ -59,7 +59,7 @@ class LibpostModelLoader {
                 });
             }
 
-            // model denormalize sync 
+            // model denormalize sync
             if(this._worker === 0 && dot.get(this._syncConf, `denormalize.${lower}`)) {
                 setTimeout(() => {
                     self._app.lib.denormalize.sync(name, self._app.boot.kue);
@@ -70,9 +70,8 @@ class LibpostModelLoader {
             this.postHooks(Schema, name);
             this.listener(options, Schema.inspector);
             
-            return Schema;        
-        }
-        catch(e) {
+            return Schema;
+        } catch(e) {
             self._log.error(group, e.stack);
         }
     }
@@ -87,10 +86,11 @@ class LibpostModelLoader {
         const self  = this;
         const lower = name.toLowerCase();
         
-        // System_Users için işlem yapma 
+        // System_Users için işlem yapma
         // (Restlio modellerinden sadece users modeli event çalıştırıyor, kontrolünü kendi üzerinde sağlıyor)
-        if(name == 'System_Users')
+        if(name === 'System_Users') {
             return false;
+        }
 
         // pre save hook
         schema.pre('save', function (next) {
@@ -108,16 +108,17 @@ class LibpostModelLoader {
         
         // post save hook
         schema.post('save', function (doc) {
-            if(this._isNew)
+            if(this._isNew) {
                 self._emitter.emit(`${lower}_model_saved`, {source: name, doc});
-            else
+            } else {
                 self._emitter.emit(`${lower}_model_updated`, {source: name, doc});
+            }
         });
 
         // post remove hook
         schema.post('remove', doc => {
             self._emitter.emit(`${lower}_model_removed`, {source: name, doc});
-        });    
+        });
     }
 
     /**
@@ -131,7 +132,7 @@ class LibpostModelLoader {
         const Name         = options.Name;
         const Denorm       = options.Denorm;
         const EntityDenorm = options.EntityDenorm;
-        const Size         = options.Size; 
+        const Size         = options.Size;
         const Count        = options.Count;
         const CountRef     = options.CountRef;
         const Hook         = options.Hook;
@@ -142,7 +143,8 @@ class LibpostModelLoader {
             });
         }
 
-        if(Denorm && EntityDenorm) { // denormalize edilmesi gereken modelin entity addtoset durumunda çalıştırılması gerekiyor
+        // denormalize edilmesi gereken modelin entity addtoset durumunda çalıştırılması gerekiyor
+        if(Denorm && EntityDenorm) {
             _.each(EntityDenorm, value => {
                 self.entityDenorm(Name, `${Name.toLowerCase()}_${value}_addtoset`);
             });
@@ -155,7 +157,7 @@ class LibpostModelLoader {
             // entity api endpoint'leri için çalışacak event'ler
             _.each(Size, (target, source) => {
                 self.size(Name, source, target, inspector);
-            });        
+            });
         }
 
         if(Count) {
@@ -173,7 +175,7 @@ class LibpostModelLoader {
         if(Hook) {
             _.each(Hook, (hookData, action) => {
                 _.each(hookData, (target, source) => {
-                    self[`hook_${action}`](Name, source, target, inspector); 
+                    self[`hook_${action}`](Name, source, target, inspector);
                 });
             });
         }
@@ -190,8 +192,9 @@ class LibpostModelLoader {
 
         this._emitter.on(listener, data => {
             // _dismissHook değişkeni geldiğinde denormalization güncellemesi çalıştırılmayacak
-            if(data.doc.__dismissHook)
+            if(data.doc.__dismissHook) {
                 return false;
+            }
             
             self._log.info(`MODEL:LOADER:DENORM:${listener}`, data);
             self._app.lib.denormalize.touch(data, inspector);
@@ -210,17 +213,19 @@ class LibpostModelLoader {
         this._emitter.on(listener, data => {
             const id = data.id;
             
-            if( ! id )
+            if( ! id ) {
                 return false;
+            }
             
             const Model = self._mongoose.model(name);
          
             Model.findById(id, (err, doc) => {
-                if( err || ! doc )
+                if( err || ! doc ) {
                     return false;
+                }
 
                 // denormalize document
-                doc.save(err => {});
+                doc.save(() => {});
             });
         });
     }
@@ -273,10 +278,11 @@ class LibpostModelLoader {
         const Alias = inspector.Alias;
         const ref   = dot.get(Save, `${Alias[source]}.ref`);
 
-        if( ! ref )
+        if( ! ref ) {
             return this._log.error('LIBPOST:MODEL:LOADER:COUNT', 'reference not found');
+        }
 
-        // Model post hook events 
+        // Model post hook events
         // (eğer post mask'e izin verilip kaydedilen field varsa ilk kaydedişte target'i güncelliyoruz)
         // (_model_updated için çalışmayacak)
         this._emitter.on(`${lower}_model_saved`, data => {
@@ -312,8 +318,9 @@ class LibpostModelLoader {
         const Alias = inspector.Alias;
         const ref   = dot.get(Save, `${Alias[source]}.ref`);
 
-        if( ! ref )
+        if( ! ref ) {
             return this._log.error('LIBPOST:MODEL:LOADER:COUNT_REF', 'reference not found');
+        }
 
         /**
          * reference count şimdilik daha sonra update edilebilecek (_model_updated) durumlar için çalışmıyor
@@ -345,8 +352,9 @@ class LibpostModelLoader {
         target      = target.split(':');
         const ref   = dot.get(Save, `${Alias[target[0]]}.ref`);
 
-        if( ! ref )
+        if( ! ref ) {
             return this._log.error('LIBPOST:MODEL:LOADER:HOOK_PUSH', 'reference not found');
+        }
 
         // reference model
         const Model      = this._mongoose.model(ref);
@@ -357,17 +365,19 @@ class LibpostModelLoader {
             const doc       = data.doc;
             const SourceVal = doc[Alias[source]];
             
-            if( ! SourceVal )
+            if( ! SourceVal ) {
                 return false;
+            }
 
             const update      = {$addToSet: {}};
             const type        = Object.prototype.toString.call(SourceVal);
             const TargetField = ModelAlias[target[1]];
             
-            if(type == '[object Array]') 
+            if(type === '[object Array]') {
                 update.$addToSet[TargetField] = {$each: SourceVal};
-            else
+            } else {
                 update.$addToSet[TargetField] = SourceVal;
+            }
 
             // update reference
             self.update_hook(doc[Alias[target[0]]], update, Model, TargetField);
@@ -377,8 +387,9 @@ class LibpostModelLoader {
             const doc       = data.doc;
             const SourceVal = doc[Alias[source]];
 
-            if( ! SourceVal )
+            if( ! SourceVal ) {
                 return false;
+            }
             
             const pull        = {$pull: {}};
             const pullAll     = {$pullAll: {}};
@@ -386,11 +397,10 @@ class LibpostModelLoader {
             const TargetField = ModelAlias[target[1]];
             let update;
             
-            if(type == '[object Array]') {
+            if(type === '[object Array]') {
                 pullAll.$pullAll[TargetField] = SourceVal;
                 update = pullAll;
-            }
-            else {
+            } else {
                 pull.$pull[TargetField] = SourceVal;
                 update = pull;
             }
@@ -403,14 +413,14 @@ class LibpostModelLoader {
     update_hook(id, update, Model, TargetField) {
         const self = this;
         
-        Model.update({_id: id}, update, {}, (err, raw) => {
-            if(err)
+        Model.update({_id: id}, update, {}, (err) => {
+            if(err) {
                 self._log.error('LIBPOST:MODEL:LOADER:HOOK_PUSH', err);
+            }
 
             // find and save target model
             Model.findOne({_id: id}, (err, doc) => {
-                if( err || ! doc )
-                    return;
+                if( err || ! doc ) return;
 
                 // denormalize içinde vs bu değişkene bakılacak,
                 // bu tarz işlemden sonra denormalize çalışmasına gerek yok
@@ -420,7 +430,7 @@ class LibpostModelLoader {
                 doc.markModified(TargetField);
                 
                 // save document
-                doc.save(err => {});                
+                doc.save(() => {});
             });
         });
     }
@@ -432,7 +442,7 @@ class LibpostModelLoader {
      */
 
     _incr(model, field, id, num, decr) {
-        num          = Math.abs(parseInt(num || 1));
+        num          = Math.abs(parseInt(num || 1, 10));
         const self   = this;
         const Model  = this._mongoose.model(model);
         let cond     = {};
@@ -440,30 +450,28 @@ class LibpostModelLoader {
         let opts     = {multi: true};
         const Alias  = dot.get(Model.schema, 'inspector.Alias');
 
-        if(Alias && Alias[field])
+        if(Alias && Alias[field]) {
             field = Alias[field];
+        }
 
         // get id type
         const type = Object.prototype.toString.call(id);
         
-        if(type == '[object Array]') {
+        if(type === '[object Array]') {
             if( ! id.length ) return false;
             cond = {_id: {$in: id}};
-        }
-        else {
+        } else {
             cond = {_id: id};
             opts = {multi: false};
         }
 
-        if(decr)
-            num *= -1;
+        if(decr) num *= -1;
 
         // set update
         update.$inc[field] = num;
 
-        Model.update(cond, update, opts, (err, raw) => {
-            if(err)
-                self._log.error('LIBPOST:MODEL:LOADER:INCR', err);
+        Model.update(cond, update, opts, (err) => {
+            if(err) self._log.error('LIBPOST:MODEL:LOADER:INCR', err);
         });
     }
 

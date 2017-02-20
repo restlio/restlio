@@ -1,8 +1,6 @@
 const dot = require('dotty');
-const _   = require('underscore');
 
 function CounterCheck(req, res, next) {
-
     const _app      = req.app;
     const _env      = _app.get('env');
     const _resp     = _app.system.response.app;
@@ -27,7 +25,7 @@ function CounterCheck(req, res, next) {
         return next( _resp.NotFound({
             middleware: _middle,
             type: _errType,
-            errors: ['field not found']
+            errors: ['field not found'],
         }));
     }
 
@@ -41,10 +39,8 @@ function CounterCheck(req, res, next) {
     // check masking
     if(_app.lib.utils) {
         let _maskName;
-        if(type == 'incr')
-            _maskName = 'increment';
-        if(type == 'decr')
-            _maskName = 'decrement';
+        if(type === 'incr') _maskName = 'increment';
+        if(type === 'decr') _maskName = 'decrement';
         
         mask = mask[_maskName] || {};
         let mObj = {};
@@ -55,7 +51,7 @@ function CounterCheck(req, res, next) {
             return next( _resp.UnprocessableEntity({
                 middleware: _middle,
                 type: _errType,
-                errors: ['field mask is activated']
+                errors: ['field mask is activated'],
             }));
         }
     }
@@ -65,10 +61,10 @@ function CounterCheck(req, res, next) {
         id,
         field,
         type,
-        short
+        short,
     };
 
-    next(); 
+    next();
 }
 
-module.exports = app => CounterCheck;
+module.exports = () => CounterCheck;

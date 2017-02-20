@@ -1,24 +1,16 @@
 const async     = require('async');
-const crypto    = require('crypto');
-const jwt       = require('jwt-simple');
 const Validator = require('validatorjs');
-const addrs     = require('email-addresses');
 const dot       = require('dotty');
-const _         = require('underscore');
 
 module.exports = app => {
-
-    const _env       = app.get('env');
-    const _log       = app.lib.logger;
-    const _schema    = app.lib.schema;
-    const _mailer    = app.lib.mailer;
-    const _helper    = app.lib.utils.helper;
-	const _emitter   = app.lib.schemaEmitter;
-    const _transport = app.boot.mailer;
-	const _mongoose  = app.core.mongo.mongoose;
-    const _authConf  = app.config[_env].auth;
-    const _resp      = app.system.response.app;
-    const _mdl       = app.middle;
+    const _env      = app.get('env');
+    const _schema   = app.lib.schema;
+    const _helper   = app.lib.utils.helper;
+    const _emitter  = app.lib.schemaEmitter;
+    const _mongoose = app.core.mongo.mongoose;
+    const _authConf = app.config[_env].auth;
+    const _resp     = app.system.response.app;
+    const _mdl      = app.middle;
 
     /**
      * ----------------------------------------------------------------
@@ -42,15 +34,16 @@ module.exports = app => {
         if( userData.hash !== _helper.hash(req.body.password, userData.salt) ) {
             return next( _resp.Unauthorized({
                 type: 'InvalidCredentials',
-                errors: ['wrong password']
+                errors: ['wrong password'],
             }));
         }
 
         app.libpost.auth.userData(userData, appData.slug, res);
 
-        // push application 
+        // push application
         const Users = _mongoose.model('System_Users');
-        Users.update({_id: userData._id}, {$addToSet: {ap: appData._id}}, {}, (err, raw) => {});
+        Users.update({_id: userData._id}, {$addToSet: {ap: appData._id}}, {}, () => {});
+        return false;
     });
 
     /**
@@ -66,7 +59,7 @@ module.exports = app => {
         _mdl.access, // needs app slug
         _mdl.authtoken,
         _mdl.auth,
-    (req, res, next) => {
+    (req, res) => {
         const appData  = req.__appData;
         const userId   = req.__user.id;
         const resp     = {};
@@ -77,8 +70,9 @@ module.exports = app => {
             resp.resources = results.resources.resources || {};
             resp.profile   = false;
 
-            if(results.profile)
+            if(results.profile) {
                 resp.profile = results.profile;
+            }
 
             _resp.OK(resp, res);
         });
@@ -108,16 +102,16 @@ module.exports = app => {
         // save token
         const obj = {
             reset_token   : token, // update token on every request
-            reset_expires : Date.now()+3600000
+            reset_expires : Date.now() + 3600000,
         };
 
         // update user reset token
-        new _schema('system.users').init(req, res, next).put(userId, obj, (err, affected) => {
+        new _schema('system.users').init(req, res, next).put(userId, obj, () => {
             // send email
             app.libpost.auth.emailTemplate('reset', appData.slug, token, userData.email, _group, () => {});
 
             _resp.Created({
-                email: userData.email
+                email: userData.email,
             }, res);
         });
     });
@@ -125,7 +119,7 @@ module.exports = app => {
     app.get('/api/reset/:token',
         _mdl.json,
         _mdl.token.reset,
-    (req, res, next) => {
+    (req, res) => {
         _resp.OK({}, res);
     });
 
@@ -150,7 +144,7 @@ module.exports = app => {
         if(validation.fails()) {
             return next( _resp.UnprocessableEntity({
                 type: 'ValidationError',
-                errors: validation.errors.all()
+                errors: validation.errors.all(),
             }));
         }
 
@@ -163,17 +157,19 @@ module.exports = app => {
             updateUser(cb) {
                 new _schema('system.users').init(req, res, next).put(userId, {
                     reset_token   : {__op: 'Delete'},
-                    reset_expires : {__op: 'Delete'}
+                    reset_expires : {__op: 'Delete'},
                 },
                 (err, affected) => {
                     cb(err, affected);
                 });
-            }
+            },
         };
 
         async.parallel(a, (err, results) => {
             _resp.OK({affected: results.setUser}, res);
         });
+
+        return false;
     });
 
     /**
@@ -202,12 +198,12 @@ module.exports = app => {
 
         // save token
         const obj = {
+            email,
             apps           : req.__appId,
             inviter        : req.__user.id,
-            email,
             invite_token   : token,
             invite_expires : _helper.daysLater(expires),
-            detail         : req.body.detail
+            detail         : req.body.detail,
         };
 
         if(moderate) {
@@ -217,25 +213,23 @@ module.exports = app => {
 
         const invites = new _schema('system.invites').init(req, res, next);
 
-        invites.post(obj, (err, doc) => {
-            if(err)
-                return invites.errResponse(err);
+        invites.post(obj, (err) => {
+            if(err) return invites.errResponse(err);
 
             // send invitation mail
             // (eğer moderasyondan geçmeyecekse maili burada atıyoruz, moderasyondan geçecekse model hook'unda atıyoruz)
-            if( ! moderate )
+            if( ! moderate ) {
                 app.libpost.auth.emailTemplate('invite', appData.slug, token, email, _group, () => {});
+            }
 
-            _resp.Created({
-                email
-            }, res);
+            return _resp.Created({email}, res);
         });
     });
 
     app.get('/api/invite/:token',
         _mdl.json,
         _mdl.token.invite,
-    (req, res, next) => {
+    (req, res) => {
         _resp.OK({}, res);
     });
 
@@ -252,21 +246,22 @@ module.exports = app => {
 
         // set default password
         let password = req.body.password;
-        if( ! password || password === '' )
+        if( ! password || password === '' ) {
             password = _helper.random(20);
+        }
 
         // validation rules
         const rules = {
             email    : 'required|email',
-            password : dot.get(_authConf, `${appData.slug}.register.password`) || 'required|min:4|max:20'
+            password : dot.get(_authConf, `${appData.slug}.register.password`) || 'required|min:4|max:20',
         };
 
         const obj = {
-            email      : inviteData.email,
             password,
+            email      : inviteData.email,
             roles      : req.__defaultRole,
             is_invited : 'Y',
-            inviter    : inviteData.inviter
+            inviter    : inviteData.inviter,
         };
 
         // check waiting list
@@ -280,27 +275,27 @@ module.exports = app => {
         // validate data
         const validation = new Validator(obj, rules, _helper._slugs);
 
-        if(validation.fails())
+        if(validation.fails()) {
             return _helper.bodyErrors(validation.errors.all(), next);
+        }
 
         // save user with basic data
         const users = new _schema('system.users').init(req, res, next);
 
         users.post(obj, (err, user) => {
-            if(err)
-                return users.errResponse(err);
+            if(err) return users.errResponse(err);
 
             new _schema('system.invites').init(req, res, next).put(inviteData._id, {
                 invite_token   : {__op: 'Delete'},
-                invite_expires : {__op: 'Delete'}
-            },
-            (err, affected) => {
-                // send new user data
-                _resp.Created({
-                    email: user.email
-                }, res);
+                invite_expires : {__op: 'Delete'},
+            }, () => {
+                _resp.Created({email: user.email}, res); // send new user data
             });
+
+            return false;
         });
+
+        return false;
     });
 
     /**
@@ -325,29 +320,27 @@ module.exports = app => {
         // validation rules
         const rules = {
             email    : 'required|email',
-            password : dot.get(_authConf, `${slug}.register.password`) || 'required|min:4|max:20'
+            password : dot.get(_authConf, `${slug}.register.password`) || 'required|min:4|max:20',
         };
 
         // check email verify option
-        const no_email = dot.get(_authConf, `${slug}.register.no_email_verify`) || false;
+        const noEmail = dot.get(_authConf, `${slug}.register.no_email_verify`) || false;
 
         // user data
         const data = {
             email    : req.body.email,
             password : req.body.password,
-            roles    : req.__defaultRole
+            roles    : req.__defaultRole,
         };
 
         // set user enable mode
-        data.is_enabled = no_email ? 'Y' : 'N';
+        data.is_enabled = noEmail ? 'Y' : 'N';
         
         // check waiting list
         const waiting = dot.get(_authConf, `${slug}.auth.waiting_list`) || false;
 
-        if(waiting)
-            data.waiting_status = 'WA';
-        else
-            data.register_token = token;
+        if(waiting) data.waiting_status = 'WA';
+        else data.register_token = token;
         
         // profile obj
         const profiles = `${slug}.profiles`;
@@ -369,52 +362,56 @@ module.exports = app => {
         // validate data
         const validation = new Validator(data, rules, _helper._slugs);
 
-        if(validation.fails())
+        if(validation.fails()) {
             return _helper.bodyErrors(validation.errors.all(), next);
+        }
 
         // save user
         const users = new _schema('system.users').init(req, res, next);
 
         users.post(data, (err, user) => {
-            if(err)
-                return users.errResponse(err);
+            if(err) return users.errResponse(err);
 
             // create profile
             if(mProfile) {
                 const profileObj = {
                     apps  : req.__appId,
                     users : user._id.toString(),
-                    name  : req.body.name
+                    name  : req.body.name,
                 };
 
-                if(data.username)
+                if(data.username) {
                     profileObj.username = data.username;
+                }
 
-	            // create profile and send response
-                new _schema(profiles).init(req, res, next).post(profileObj, (err, doc) => {
-	                _resp.Created({email: user.email}, res); // response
-	                _emitter.emit('user_registered', {user}); // emit event
+                // create profile and send response
+                new _schema(profiles).init(req, res, next).post(profileObj, () => {
+                    _resp.Created({email: user.email}, res); // response
+                    _emitter.emit('user_registered', {user}); // emit event
                 });
-            }
-            else {
-	            _resp.Created({email: user.email}, res); // response 
-	            _emitter.emit('user_registered', {user}); // emit event
+            } else {
+                _resp.Created({email: user.email}, res); // response
+                _emitter.emit('user_registered', {user}); // emit event
             }
 
             // send email (waiting listesinde ise veya email verify yapmıyorsak mail göndermiyoruz)
-            if( ! waiting && ! no_email )
+            if( ! waiting && ! noEmail ) {
                 app.libpost.auth.emailTemplate('register', slug, token, req.body.email, _group, () => {});
-	        
-	        // push application 
-	        const Users = _mongoose.model('System_Users');
-	        Users.update({_id: user._id}, {$addToSet: {ap: req.__appData._id}}, {}, (err, raw) => {});
+            }
+
+            // push application
+            const Users = _mongoose.model('System_Users');
+            Users.update({_id: user._id}, {$addToSet: {ap: req.__appData._id}}, {}, () => {});
+            return false;
         });
+
+        return false;
     });
 
     app.get('/api/verify/:token',
         _mdl.json,
         _mdl.token.verify,
-    (req, res, next) => {
+    (req, res) => {
         _resp.OK({}, res);
     });
 
@@ -433,12 +430,12 @@ module.exports = app => {
             },
             updateUser(cb) {
                 new _schema('system.users').init(req, res, next).put(userId, {
-                    register_token: {__op: 'Delete'}
+                    register_token: {__op: 'Delete'},
                 },
                 (err, affected) => {
                     cb(err, affected);
                 });
-            }
+            },
         };
 
         async.parallel(a, (err, results) => {
@@ -458,26 +455,27 @@ module.exports = app => {
 
         // check user by email
         new _schema('system.users').init(req, res, next).get({
-            email: req.body.email.toLowerCase(), 
-            qt: 'one'
+            email: req.body.email.toLowerCase(),
+            qt: 'one',
         }, (err, doc) => {
             if( err || ! doc ) {
                 return next( _resp.Unauthorized({
                     type: 'InvalidCredentials',
-                    errors: ['user not found']}
-                ));                
-            }
-            else if( ! doc.register_token ) {
+                    errors: ['user not found'],
+                }));
+            } else if( ! doc.register_token ) {
                 return next( _resp.Unauthorized({
                     type: 'InvalidCredentials',
-                    errors: ['register token not found']}
-                ));
+                    errors: ['register token not found'],
+                }));
             }
             
             // resend activation mail
             app.libpost.auth.emailTemplate('register', slug, doc.register_token, doc.email, _group, () => {
                 _resp.OK({}, res);
             });
+
+            return false;
         });
     });
     
@@ -505,7 +503,7 @@ module.exports = app => {
         const data = {
             old_password        : oldPass,
             new_password        : newPass,
-            new_password_repeat : passRepeat
+            new_password_repeat : passRepeat,
         };
 
         const rule  = dot.get(_authConf, `${slug}.register.password`) || 'required|min:4|max:20';
@@ -520,25 +518,27 @@ module.exports = app => {
         if(validation.fails()) {
             return next( _resp.UnprocessableEntity({
                 type: 'ValidationError',
-                errors: validation.errors.all()
+                errors: validation.errors.all(),
             }));
         }
 
         if( userData.hash !== _helper.hash(oldPass, userData.salt) ) {
             return next( _resp.Unauthorized({
                 type: 'InvalidCredentials',
-                errors: ['old_password is wrong']}
-            ));
+                errors: ['old_password is wrong'],
+            }));
         }
 
         // update password
         new _schema('system.users').init(req, res, next).put(userData._id, {
             password: newPass,
             password_changed: 'Y',
-            password_changed_at: Date.now()
+            password_changed_at: Date.now(),
         }, (err, affected) => {
             _resp.OK({affected}, res);
         });
+
+        return false;
     });
 
     /**
@@ -559,35 +559,31 @@ module.exports = app => {
         // _mdl.user.waiting, profile data'sını token olmadan döneceğiz
         // _mdl.user.enabled, profile data'sını token olmadan döneceğiz
     (req, res, next) => {
-        const appData     = req.__appData;
         const appSlug     = req.__appData.slug;
         const userData    = req.__userData;
         const socialData  = req.__social;
-	    const accountData = req.__social.account;
+        const accountData = req.__social.account;
 
-	    // check profile model
-	    const profiles = `${appSlug}.profiles`;
-	    const mProfile = dot.get(req.app.model, profiles);
-	    
-	    // set tokenDisabled 
+        // check profile model
+        const profiles = `${appSlug}.profiles`;
+        const mProfile = dot.get(req.app.model, profiles);
+
+        // set tokenDisabled
         let tokenDisabled = false;
-        if(userData && (userData.is_enabled == 'No' || userData.waiting_status != 'Accepted'))
+        if(userData && (userData.is_enabled === 'No' || userData.waiting_status !== 'Accepted')) {
             tokenDisabled = true;
+        }
 
         // return user data if found
         if(userData) {
-	        // create account
+            // create account
             if(accountData) {
                 accountData.apps  = req.__appId;
                 accountData.users = userData._id;
-                new _schema('system.accounts').init(req, res, next).post(accountData, (err, doc) => {});                
+                new _schema('system.accounts').init(req, res, next).post(accountData, () => {});
             }
-	        
-            /**
-             * @TODO
-             * profili de kontrol et, eğer yoksa profil oluştur
-             */
-            
+
+            // TODO: profili de kontrol et, eğer yoksa profil oluştur
             return app.libpost.auth.userData(userData, appSlug, res, tokenDisabled, accountData);
         }
 
@@ -595,8 +591,8 @@ module.exports = app => {
         if(req.__usernameExists) {
             return next( _resp.Unauthorized({
                 type: 'InvalidCredentials',
-                errors: ['username exists']}
-            ));
+                errors: ['username exists'],
+            }));
         }
 
         // validation rules
@@ -606,7 +602,7 @@ module.exports = app => {
         const data = {
             email    : req.body.email,
             password : _helper.random(20),
-            roles    : req.__defaultRole
+            roles    : req.__defaultRole,
         };
 
         // check waiting list
@@ -614,7 +610,7 @@ module.exports = app => {
         
         if(waiting) {
             data.is_enabled     = 'N';
-            data.waiting_status = 'WA'; 
+            data.waiting_status = 'WA';
         }
         
         // profile obj
@@ -634,24 +630,24 @@ module.exports = app => {
         // validate data
         const validation = new Validator(data, rules, _helper._slugs);
 
-        if(validation.fails())
+        if(validation.fails()) {
             return _helper.bodyErrors(validation.errors.all(), next);
+        }
 
         // save user
         const users = new _schema('system.users').init(req, res, next);
 
         users.post(data, (err, user) => {
-            if(err)
-                return users.errResponse(err);
+            if(err) return users.errResponse(err);
 
             // user id
             user._id = user._id.toString();
             
-	        // create account
+            // create account
             if(accountData) {
-    	        accountData.apps  = req.__appId;
-	            accountData.users = user._id;
-	            new _schema('system.accounts').init(req, res, next).post(accountData, (err, doc) => {});
+                accountData.apps  = req.__appId;
+                accountData.users = user._id;
+                new _schema('system.accounts').init(req, res, next).post(accountData, () => {});
             }
 
             // set tokenDisabled
@@ -662,22 +658,26 @@ module.exports = app => {
                 const profileObj = {
                     apps  : req.__appId,
                     users : user._id,
-                    name  : data.name
+                    name  : data.name,
                 };
 
-                if(data.username)
+                if(data.username) {
                     profileObj.username = data.username;
-
-                new _schema(profiles).init(req, res, next).post(profileObj, (err, doc) => {
+                }
+                    
+                new _schema(profiles).init(req, res, next).post(profileObj, () => {
                     // return user data
                     app.libpost.auth.userData(user, appSlug, res, tokenDisabled, accountData);
                 });
-            }
-            else {
+            } else {
                 // return user data
-                app.libpost.auth.userData(user, appSlug, res, tokenDisabled, accountData); 
+                app.libpost.auth.userData(user, appSlug, res, tokenDisabled, accountData);
             }
+
+            return false;
         });
+
+        return false;
     });
 
     /**
@@ -703,7 +703,7 @@ module.exports = app => {
         // update user data
         new _schema('system.users').init(req, res, next).put(bodyUser._id, {
             is_enabled     : 'Y',
-            waiting_status : 'AC'    
+            waiting_status : 'AC',
         },
         (err, affected) => {
             // send information mail
@@ -730,7 +730,7 @@ module.exports = app => {
         // update user data
         new _schema('system.users').init(req, res, next).put(bodyUser._id, {
             is_enabled     : 'N',
-            waiting_status : 'DC'
+            waiting_status : 'DC',
         },
         (err, affected) => {
             // send information mail
@@ -747,15 +747,13 @@ module.exports = app => {
         _mdl.access, // needs app slug
         _mdl.data.query.email,
     (req, res, next) => {
-        const _group   = 'AUTH:WAITING:LINE';
-        const appSlug  = req.__appData.slug;
         const userData = req.__queryUser;
         
-        if(userData.waiting_status == 'Accepted') {
+        if(userData.waiting_status === 'Accepted') {
             return next( _resp.Unauthorized({
                 type: 'InvalidCredentials',
-                errors: ['user is not in the waiting list']}
-            ));
+                errors: ['user is not in the waiting list'],
+            }));
         }
         
         const a = {
@@ -763,7 +761,7 @@ module.exports = app => {
                 new _schema('system.users').init(req, res, next).get({
                     is_enabled: 'N',
                     waiting_status: 'WA',
-                    qt: 'count'
+                    qt: 'count',
                 }, (err, doc) => {
                     cb(null, doc);
                 });
@@ -773,27 +771,27 @@ module.exports = app => {
                     _id: `{lt}${userData._id}`,
                     is_enabled: 'N',
                     waiting_status: 'WA',
-                    qt: 'count'
+                    qt: 'count',
                 }, (err, doc) => {
                     cb(null, doc);
                 });
-            }
+            },
         };
         
         async.parallel(a, (err, results) => {
             const total  = dot.get(results, 'total.count') || 0;
             const before = dot.get(results, 'before.count') || 0;
-            const diff   = total-before;
-            const after  = diff-1;
+            const diff   = total - before;
+            const after  = diff - 1;
             
             _resp.OK({
                 total,
                 before,
                 after,
-                line   : total-after
+                line: total - after,
             }, res);
         });
-        
+
+        return false;
     });
-    
 };

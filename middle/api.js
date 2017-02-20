@@ -3,4 +3,4 @@ function Api(req, res, next) {
     next();
 }
 
-module.exports = app => Api;
+module.exports = () => Api;

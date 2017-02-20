@@ -1,7 +1,4 @@
-const _ = require('underscore');
-
 module.exports = app => {
-
     const _env      = app.get('env');
     const _log      = app.lib.logger;
     const _mongoose = app.core.mongo.mongoose;
@@ -23,7 +20,7 @@ module.exports = app => {
         u  : {type: ObjectId, required: true, ref: 'System_Users', alias: 'users'},
         n  : {type: String, required: true, alias: 'name'},
         o  : {type: String, required: true, alias: 'object'},
-        f  : {type: String, required: true, alias: 'filter'}
+        f  : {type: String, required: true, alias: 'filter'},
     };
 
     /**
@@ -49,8 +46,8 @@ module.exports = app => {
             plural   : 'System Filters',
             columns  : ['name', 'object'],
             main     : 'name',
-            perpage  : 25
-        }
+            perpage  : 25,
+        },
     });
 
     // plugins
@@ -63,11 +60,9 @@ module.exports = app => {
      */
 
     FilterSchema.pre('save', function(next) {
-
         const self    = this;
         self._isNew = self.isNew;
         next();
-
     });
 
     /**
@@ -77,15 +72,9 @@ module.exports = app => {
      */
 
     FilterSchema.post('save', function(doc) {
-
         const self = this;
         if(self._isNew) {}
-
     });
 
     return _mongoose.model('System_Filters', FilterSchema);
-
 };
-
-
-

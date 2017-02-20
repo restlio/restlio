@@ -1,8 +1,4 @@
-const dot = require('dotty');
-const _   = require('underscore');
-
 module.exports = app => {
-
     const _env      = app.get('env');
     const _log      = app.lib.logger;
     const _mongoose = app.core.mongo.mongoose;
@@ -36,10 +32,10 @@ module.exports = app => {
         tk  : {type: String, required: true, alias: 'token'},
         rtk : {type: String, alias: 'refresh_token'},
         tks : {type: String, alias: 'token_secret'},
-	    idt : {type: String, alias: 'id_token'}, // googleplus
+        idt : {type: String, alias: 'id_token'}, // googleplus
 
         ua  : {type: Date, default: Date.now, alias: 'updated_at'},
-        ca  : {type: Date, default: Date.now, alias: 'created_at'}
+        ca  : {type: Date, default: Date.now, alias: 'created_at'},
     };
 
     /**
@@ -58,8 +54,8 @@ module.exports = app => {
             {label: 'Linkedin', value: 'L'},
             {label: 'Dribbble', value: 'D'},
             {label: 'Foursquare', value: 'FS'},
-	        {label: 'GooglePlus', value: 'GP'}
-        ]
+            {label: 'GooglePlus', value: 'GP'},
+        ],
     };
 
     Schema.uid.settings = {label: 'User Id'};
@@ -84,27 +80,27 @@ module.exports = app => {
             plural     : 'System Accounts',
             columns    : ['users', 'type', 'user_id', 'user_name', 'display_name', 'profile_photo', 'location', 'token', 'token_secret'],
             main       : 'users',
-            perpage    : 25
+            perpage    : 25,
         },
         Owner: {
             field : 'u',
             alias : 'users',
             protect : {
-                'get': true,
-                'getid': true,
-                'post': true,
-                'put': true,
-                'remove': true
-            }
-        }
+                get: true,
+                getid: true,
+                post: true,
+                put: true,
+                remove: true,
+            },
+        },
     });
 
     // plugins
     AccountSchema.plugin(_query);
 
-	// index
-	AccountSchema.index({ap: 1, u: 1, t: 1, ust: 1}, {unique: true, sparse: true});
-	
+    // index
+    AccountSchema.index({ap: 1, u: 1, t: 1, ust: 1}, {unique: true, sparse: true});
+
     /**
      * ----------------------------------------------------------------
      * Pre Save Hook
@@ -112,11 +108,9 @@ module.exports = app => {
      */
 
     AccountSchema.pre('save', function(next) {
-
         const self  = this;
         self._isNew = self.isNew;
         next();
-
     });
 
     /**
@@ -126,15 +120,9 @@ module.exports = app => {
      */
 
     AccountSchema.post('save', function(doc) {
-
         const self = this;
         if(self._isNew) {}
-
     });
 
     return _mongoose.model('System_Accounts', AccountSchema);
-
 };
-
-
-

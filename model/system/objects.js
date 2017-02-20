@@ -1,5 +1,4 @@
 module.exports = app => {
-
     const _env      = app.get('env');
     const _log      = app.lib.logger;
     const _mongoose = app.core.mongo.mongoose;
@@ -19,7 +18,7 @@ module.exports = app => {
     const Schema = {
         ap : {type: ObjectId, required: true, ref: 'System_Apps', alias: 'apps'},
         n  : {type: String, required: true, alias: 'name'},
-        s  : {type: String, required: true, alias: 'slug'}
+        s  : {type: String, required: true, alias: 'slug'},
     };
 
     /**
@@ -47,8 +46,8 @@ module.exports = app => {
             perpage  : 25,
             nocreate : true,
             nodelete : true,
-            noedit   : true
-        }
+            noedit   : true,
+        },
     });
 
     // plugins
@@ -65,11 +64,9 @@ module.exports = app => {
      */
 
     ObjectSchema.pre('save', function(next) {
-
         const self = this;
         self._isNew = self.isNew;
         next();
-
     });
 
     /**
@@ -79,15 +76,9 @@ module.exports = app => {
      */
 
     ObjectSchema.post('save', function(doc) {
-
         const self = this;
         if(self._isNew) {}
-
     });
 
     return _mongoose.model('System_Objects', ObjectSchema);
-
 };
-
-
-

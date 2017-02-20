@@ -1,7 +1,4 @@
-const _ = require('underscore');
-
 module.exports = app => {
-
     const _env      = app.get('env');
     const _log      = app.lib.logger;
     const _mongoose = app.core.mongo.mongoose;
@@ -31,7 +28,7 @@ module.exports = app => {
         w  : {type: Number, default: 0, alias: 'width'},
         h  : {type: Number, default: 0, alias: 'height'},
         e  : {type: String, alias: 'ext'},
-        ca : {type: Date, alias: 'created_at', default: Date.now}
+        ca : {type: Date, alias: 'created_at', default: Date.now},
     };
 
     /**
@@ -51,9 +48,10 @@ module.exports = app => {
      */
 
     const formsObj = {
-        filter: ['name', 'title', 'path']
+        filter: ['name', 'title', 'path'],
     };
-    formsObj['new'] = ['name', 'title'];
+
+    formsObj.new = ['name', 'title'];
     
     const ImageSchema = app.libpost.model.loader.mongoose(Schema, {
         Name: 'System_Images',
@@ -63,9 +61,9 @@ module.exports = app => {
             columns  : ['name', 'title', 'path', 'bytes', 'width', 'height'],
             extra    : ['type'], // extra fields
             main     : 'name',
-            perpage  : 10
+            perpage  : 10,
         },
-        Forms: formsObj
+        Forms: formsObj,
     });
 
 
@@ -79,11 +77,9 @@ module.exports = app => {
      */
 
     ImageSchema.pre('save', function(next) {
-
         const self    = this;
         self._isNew = self.isNew;
         next();
-
     });
 
     /**
@@ -93,13 +89,9 @@ module.exports = app => {
      */
 
     ImageSchema.post('save', function(doc) {
-
         const self = this;
         if(self._isNew) {}
-
     });
 
     return _mongoose.model('System_Images', ImageSchema);
-
 };
-

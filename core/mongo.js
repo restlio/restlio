@@ -1,50 +1,42 @@
 const mongoose = require('mongoose');
-const dot      = require('dotty');
+const dot = require('dotty');
+const debug = require('debug');
+
+// enable mongoose promises
+mongoose.Promise = Promise;
 
 module.exports = app => {
-
-    const _env    = app.get('env');
-    const _log    = app.lib.logger;
-    const _conf   = app.config[_env].mongo || dot.get(app.config[_env], 'data.mongo');
+    const _env = app.get('env');
+    const _conf = app.config[_env].mongo || dot.get(app.config[_env], 'data.mongo');
     const _worker = app.get('workerid');
-    const _sConf  = app.config[_env].sync;
-    const _logs   = dot.get(_sConf, 'data.core');
-    const _group  = `W${_worker}:CORE:MONGO`;
-    let _auth     = '';
+    const log = debug(`RESTLIO:W${_worker}:CORE:MONGO`);
+    let _auth = '';
 
     if( ! _conf ) {
-        _log.info(_group, 'mongo conf not found!', 'red');
-        return false;
+        return log('mongo conf not found!');
     }
     
-    if(_conf.user && _conf.pass)
+    if(_conf.user && _conf.pass) {
         _auth = `${_conf.user}:${_conf.pass}@`;
+    }
 
     const str = `mongodb://${_auth}${_conf.host}:${_conf.port}/${_conf.db}`;
-    const db  = mongoose.connect(str, {
-        server: {poolSize: parseInt(_conf.pool) || 10},
-        config: {autoIndex: _conf.autoIndex || false}
+    const db = mongoose.connect(str, {
+        server: {poolSize: parseInt(_conf.pool, 10) || 10},
+        config: {autoIndex: _conf.autoIndex || false},
     });
 
     // mongoose set event emitter max listeners
     mongoose.connection.setMaxListeners(0);
+    mongoose.connection.on('error', err => log(err));
+    mongoose.connection.on('open', () => log('client connected'));
 
-    mongoose.connection.on('error', err => {
-        _log.error(_group, err);
-    });
-
-    mongoose.connection.on('open', () => {
-        if(_logs)
-            _log.info(_group, 'client connected', 'black');
-    });
-
-    if(_conf.debug)
+    if(_conf.debug) {
         mongoose.set('debug', true);
-        
-    if(_logs) {
-        _log.info(`${_group}:CONFIG`, _conf, 'black');
-        _log.info(`${_group}:STRING`, str, 'black');
     }
+        
+    log('CONFIG %o', _conf);
+    log('STRING', str);
 
     // set core object
     const obj = {db, str, mongoose};
@@ -52,5 +44,4 @@ module.exports = app => {
     app.config[_env].mongo = {str};
 
     return obj;
-
 };

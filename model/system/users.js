@@ -1,22 +1,17 @@
 const async  = require('async');
-const crypto = require('crypto');
 const uuid   = require('uuid');
 const php    = require('phpjs');
 const _      = require('underscore');
 
 module.exports = app => {
-
-    const _env      = app.get('env');
     const _log      = app.lib.logger;
     const _mongoose = app.core.mongo.mongoose;
     const _query    = app.lib.query;
     const _emitter  = app.lib.schemaEmitter;
     const _helper   = app.lib.utils.helper;
-    const _group    = 'MODEL:system.users';
 
     // types
     const ObjectId  = _mongoose.Schema.Types.ObjectId;
-    const Mixed     = _mongoose.Schema.Types.Mixed;
 
     /**
      * ----------------------------------------------------------------
@@ -27,7 +22,8 @@ module.exports = app => {
     const Schema = {
         ap  : [{type: ObjectId, ref: 'System_Apps', alias: 'apps'}],
         em  : {type: String, required: true, alias: 'email', pattern: 'email', unique: true},
-        pa  : {type: String, optional: false, alias: 'password'}, // save'de required: true, update'de required: false gibi davranması için optional: false olarak işaretlendi
+        // save'de required: true, update'de required: false gibi davranması için optional: false olarak işaretlendi
+        pa  : {type: String, optional: false, alias: 'password'},
         na  : {type: String, alias: 'name', index: true}, // for backward compatibility
         sa  : {type: String, alias: 'salt'},
         ha  : {type: String, alias: 'hash'},
@@ -43,7 +39,7 @@ module.exports = app => {
         ll  : {type: Date, alias: 'last_login', index: true},
         ws  : {type: String, default: 'AC', enum: ['WA', 'AC', 'DC'], alias: 'waiting_status', index: true},
         pc  : {type: String, default: 'N', enum: ['Y', 'N'], alias: 'password_changed'},
-        pca : {type: Date, alias: 'password_changed_at'}
+        pca : {type: Date, alias: 'password_changed_at'},
     };
 
     /**
@@ -60,16 +56,16 @@ module.exports = app => {
         label: 'Is Enabled ?',
         options: [
             {label: 'Yes', value: 'Y'},
-            {label: 'No', value: 'N'}
-        ]
+            {label: 'No', value: 'N'},
+        ],
     };
 
     Schema.ty.settings = {
         label: 'Type',
         options: [
             {label: 'User', value: 'U'},
-            {label: 'Admin', value: 'A'}
-        ]
+            {label: 'Admin', value: 'A'},
+        ],
     };
 
     Schema.ro[0].settings = {label: 'Roles', display: 'name'};
@@ -78,21 +74,21 @@ module.exports = app => {
         initial: false,
         options: [
             {label: 'Yes', value: 'Y'},
-            {label: 'No', value: 'N'}
-        ]
+            {label: 'No', value: 'N'},
+        ],
     };
-	
+
     Schema.ws.settings = {
         initial: false,
         options: [
             {label: 'Waiting', value: 'WA'},
             {label: 'Accepted', value: 'AC'},
-            {label: 'Declined', value: 'DC'}
-        ]
+            {label: 'Declined', value: 'DC'},
+        ],
     };
 
-	Schema.ll.settings = {initial: false, label: 'Last Login'};
-	Schema.ca.settings = {initial: false, label: 'Created At'};
+    Schema.ll.settings = {initial: false, label: 'Last Login'};
+    Schema.ca.settings = {initial: false, label: 'Created At'};
     
     /**
      * ----------------------------------------------------------------
@@ -108,16 +104,16 @@ module.exports = app => {
             columns  : ['email', 'roles', 'apps', 'last_login', 'created_at'],
             main     : 'email',
             perpage  : 25,
-	        sort     : '-_id'
-        }
+            sort     : '-_id',
+        },
     });
 
     // plugins
     UserSchema.plugin(_query);
     // console.log(UserSchema.inspector.Save.properties);
 
-	UserSchema.index({ap: 1});
-	
+    UserSchema.index({ap: 1});
+
     /**
      * ----------------------------------------------------------------
      * Pre Save Hook
@@ -156,7 +152,7 @@ module.exports = app => {
         if( ! self._isNew && ! self._lastLogin ) {
             _emitter.emit('system_users_updated', {
                 source: 'System_Users',
-                doc
+                doc,
             });
         }
 
@@ -192,28 +188,29 @@ module.exports = app => {
                     Roles.find({_id: {$in: roles}, s: {$ne: 'superadmin'}}).exec((err, roles) => {
                         cb(err, roles);
                     });
-                }
+                },
             };
 
             async.parallel(a, (err, results) => {
-                if(err)
-                    return _log.error(err);
+                if(err) return _log.error(err);
 
-                if( ! results || ! results.roles || ! results.roles.length )
+                if( ! results || ! results.roles || ! results.roles.length ) {
                     return _log.info('roles not found');
+                }
 
                 const roleData = results.roles;
 
                 // collect app ids from role data
                 const apps = [];
-                _.each(roleData, (value, key) => {
+                _.each(roleData, (value) => {
                     apps.push(value.ap.toString());
                 });
 
                 // get apps data
                 Apps.find({_id: {$in: apps}}).exec((err, apps) => {
-                    if( err || ! apps )
+                    if( err || ! apps ) {
                         return _log.info('apps not found');
+                    }
 
                     // use apps _id as key
                     const appsObj = {};
@@ -226,7 +223,7 @@ module.exports = app => {
                     const rolesObj = {};
 
                     // use roles _id as key, appSlug_roleSlug as value
-                    _.each(roleData, (value, key) => {
+                    _.each(roleData, (value) => {
                         rolesObj[value._id.toString()] = `${appsObj[value.ap.toString()].s}_${value.s}`;
                     });
 
@@ -246,7 +243,7 @@ module.exports = app => {
                             }
                         }
 
-                        return;
+                        return false;
                     }
 
                     /**
@@ -272,7 +269,11 @@ module.exports = app => {
                         app.acl.removeUserRoles(doc._id.toString(), oldRoles);
                         _log.info(`ACL:REMOVE_USER_ROLES:${doc._id}`, oldRoles);
                     }
+
+                    return false;
                 });
+
+                return false;
             });
         }
     });
@@ -300,28 +301,29 @@ module.exports = app => {
                     Roles.find({_id: {$in: doc.ro}}).exec((err, roles) => {
                         cb(err, roles);
                     });
-                }
+                },
             };
 
             async.parallel(a, (err, results) => {
-                if(err)
-                    return _log.error(err);
+                if(err) return _log.error(err);
 
-                if( ! results || ! results.roles )
+                if( ! results || ! results.roles ) {
                     return _log.info('roles not found (remove)');
+                }
 
                 const roleData = results.roles;
 
                 // collect app ids from role data
                 const apps = [];
-                _.each(roleData, (value, key) => {
+                _.each(roleData, (value) => {
                     apps.push(value.ap.toString());
                 });
 
                 // get apps data
                 Apps.find({_id: {$in: apps}}).exec((err, apps) => {
-                    if (err || !apps)
+                    if ( err || ! apps ) {
                         return _log.info('apps not found');
+                    }
 
                     // use apps _id as key
                     const appsObj = {};
@@ -332,21 +334,20 @@ module.exports = app => {
                     const rolesObj = {};
 
                     // use roles _id as key, appSlug_roleSlug as value
-                    _.each(roleData, (value, key) => {
+                    _.each(roleData, (value) => {
                         rolesObj[value._id] = `${appsObj[value.ap.toString()].s}_${value.s}`;
                     });
 
                     doc.ro = _.map(doc.ro, key => rolesObj[key]);
                     app.acl.removeUserRoles(doc._id.toString(), doc.ro);
                     _log.info(`ACL:REMOVE_USER_ROLES:${doc._id}`, doc.ro);
+                    return false;
                 });
+
+                return false;
             });
         }
     });
 
     return _mongoose.model('System_Users', UserSchema);
-
 };
-
-
-

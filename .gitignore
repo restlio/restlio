@@ -2,6 +2,7 @@ node_modules/
 npm-debug.log
 coverage/
 .vscode/
+restlio.todo
 
 ### OSX ###
 .DS_Store
