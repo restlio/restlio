@@ -1,13 +1,12 @@
 module.exports = app => {
-    const _env      = app.get('env');
-    const _log      = app.lib.logger;
+    const _env = app.get('env');
     const _mongoose = app.core.mongo.mongoose;
-    const _query    = app.lib.query;
-    const _emitter  = app.lib.schemaEmitter;
+    const _query = app.lib.query;
+    const _emitter = app.lib.schemaEmitter;
 
     // types
-    const ObjectId  = _mongoose.Schema.Types.ObjectId;
-    const Mixed     = _mongoose.Schema.Types.Mixed;
+    const ObjectId = _mongoose.Schema.Types.ObjectId;
+    const Mixed = _mongoose.Schema.Types.Mixed;
 
     /**
      * ----------------------------------------------------------------

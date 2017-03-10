@@ -1,13 +1,34 @@
+const start = Date.now();
+const timediff = require('timediff');
 const express = require('express');
 const load = require('express-load');
 const http = require('http');
 const _ = require('underscore');
+const plugin = require('./plugin.json');
+const Topo = require('topo');
+const debug = require('debug')('RESTLIO:INDEX');
+
+// get topo instance
+const topo = new Topo();
+const basic = plugin.basic;
+const toString = Object.prototype.toString;
 
 class Restlio {
     
-    constructor(options = {}) {
-        this._opts = options;
-
+    constructor({
+        basedir = __dirname,
+        verbose = false,
+        name = 'app',
+        env = 'development',
+        port = 3001,
+        test = false,
+        tz = 'UTC',
+        external = {},
+        boot = false,
+        resize = false,
+        sync = false,
+        apidocs = false,
+    } = {}) {
         // set worker_id
         this.setEnv('worker_id', 0);
         if(typeof process.env.pm_id !== 'undefined') {
@@ -15,8 +36,8 @@ class Restlio {
         }
 
         // set options
-        this._opts.basedir = options.basedir || __dirname;
-        this._opts.verbose = options.verbose || false;
+        this._opts = {basedir, verbose, tz, external, boot, resize, sync, apidocs};
+        process.env.TZ = tz;
 
         // application
         this._load = load;
@@ -24,124 +45,123 @@ class Restlio {
         this._server = http.createServer(this._app);
 
         // app variables
-        this._app.set('name', this._opts.name || 'app');
-        this._app.set('env', this._opts.env || process.env.NODE_ENV || 'development');
-        this._app.set('port', this._opts.port || process.env.NODE_PORT || 3001);
-        this._app.set('basedir', this._opts.basedir);
-        this._app.set('isworker', false);
-        this._app.set('istest', options.test || false);
-        this._app.set('workerid', process.env.worker_id);
-
-        // other options
-        this._opts.tz = this._opts.tz || 'UTC';
-        this._opts.external = this._opts.external || {};
-
-        // set process variables
-        process.env.TZ = this._opts.tz;
-
-        // libraries
-        this._libs = [
-            'utils/helper|auth|cache|denormalize|form|index|',
-            'inspector|logger|mailer|paginate|query|randomize|request|',
-            'schema|schemaBase|upload|user',
-        ].join('');
-
-        // services
-        this._app._services = [];
+        this.set('name', name);
+        this.set('env', process.env.NODE_ENV || env);
+        this.set('port', process.env.NODE_PORT || port);
+        this.set('basedir', basedir);
+        this.set('istest', test);
+        this.set('workerid', process.env.worker_id);
 
         return this;
     }
 
-    run(cb) {
-        const _opts = this._opts;
-        const _external = _opts.external;
-        
-        this.loadConfig();
-        this.internal('boot/start|lib/logger');
-        this.loadBase();
-        // --- order matters
-        this.internal('system/response/app'); // before routes
-        // --- api routes
-        this.internal('boot/api');
-        this.internal('route/api/v1');
-        this.external('api', _external.api);
-        // --- web routes
-        this.internal('boot/web');
-        this.loadBoot();
-        this.loadServiceInit();
-        this.external('route', _external.route);
-        // --- other routes
-        this.internal('route/admin');
-        this.loadResize();
-        this.initServices();
-        this.internal('system/handler/app'); // after routes
-        this.loadSync();
-        this.apiDocs();
-        this.listen(cb);
+    appLoad(appKey, cb) {
+        if( ! plugin[appKey] ) {
+            return debug('key not found! %s', appKey);
+        }
 
-        return this;
-    }
+        const jsonData = plugin[appKey].load;
+        this.appOptions = plugin[appKey].options;
+        this.topoAdd(jsonData);
+        debug('loading plugins');
+        debug('%O', this.nodes);
 
-    workers() {
-        this._app.set('isworker', true);
+        _.each(this.nodes, node => {
+            if( ! jsonData[node] ) {
+                return debug('plugin not found! %s', node);
+            }
 
-        this.loadConfig();
-        this.internal('boot/start|lib/logger');
-        this.loadBase();
-        this.loadServiceInit();
-        this.internal('boot/worker');
-        this.loadBoot();
-        this.loadWorker();
+            let data = jsonData[node];
+            if(data === 'predefined' && basic[node]) {
+                data = basic[node];
+            }
 
-        this._load.into(this._app, (err) => {
-            if(err) throw err;
-            this._app.lib.logger.instance('Restlio', 'worker initialized');
+            const {disabled, type = 'internal', func, key, value} = data;
+
+            if(disabled) {
+                return debug('plugin is disabled! %s', node);
+            }
+            
+            if(type === 'internal') {
+                this.internal(key, value);
+            } else if(type === 'external') {
+                this.external(key, value);
+            } else if(type === 'function') {
+                this[func || node](cb);
+            }
         });
     }
 
-    loadConfig() {
+    topoAdd(jsonData) {
+        let current;
+        _.each(jsonData, (val, key) => {
+            if(val === 'predefined' && basic[key]) {
+                val = basic[key];
+            }
+
+            if( ! val.group ) {
+                val.group = key;
+            }
+
+            if(current && ! val.after && ! val.before) {
+                val.after = current;
+            }
+
+            topo.add(key, val);
+            current = key;
+        });
+        
+        this.nodes = topo.nodes;
+    }
+
+    run(cb) {
+        this.appLoad('app', cb);
+    }
+
+    workers() {
+        this.appLoad('workers');
+        _.each(this.appOptions, (val, key) => {
+            this.set(key, val);
+        });
+
+        this._load.into(this._app, err => {
+            if(err) {
+                throw err;
+            }
+
+            debug('worker initialized');
+        });
+    }
+
+    config() {
         this._load = this._load(`config/${this._app.get('env')}`, {
             cwd: this._opts.basedir,
             verbose: this._opts.verbose,
         });
     }
 
-    loadBase() {
-        this.loadCore();
-        this.loadLib();
-        this.loadMiddle();
-        this.loadModel();
-        this.loadService();
-    }
-
-    loadCore() {
-        this.internal('core', 'mongo|redis|cache');
-        this.external('core', this._opts.external.core);
-    }
-
-    loadLib() {
-        this.internal('lib', this._libs);
+    libPost() {
         this.external('lib', this._opts.external.lib);
         this.internal('libpost');
         this.external('libpost', this._opts.external.libpost);
     }
 
-    loadMiddle() {
+    middle() {
         this.internal('middle');
         this.external('middle', this._opts.external.middle);
     }
 
-    loadModel() {
+    model() {
         this.internal('model');
         this.external('model', this._opts.external.model);
     }
 
-    loadService() {
+    service() {
         this.internal('service', 'model|system');
         this.external('service', this._opts.external.service);
     }
 
-    loadBoot() {
+    bootApp() {
         if(this._opts.boot) {
             this.internal('boot', this._opts.boot);
         }
@@ -149,38 +169,39 @@ class Restlio {
         this.external('boot', this._opts.external.boot);
     }
 
-    loadServiceInit() {
+    serviceInit() {
         this.internal('service/init');
         this.external('service', 'init');
     }
 
-    loadWorker() {
+    worker() {
         this.internal('worker');
         this.external('worker', this._opts.external.worker);
     }
 
-    loadResize() {
+    resize() {
         // image resize middleware routes
         if(this._opts.resize) {
             this.internal('boot/resize');
         }
     }
 
-    service(loader, opts) {
-        this._app._services.push({loader, opts});
+    routeApi() {
+        this.internal('route/api/v1');
+        this.external('api', this._opts.external.api);
     }
 
-    initServices() {
-        this.internal('boot/service');
+    routeApp() {
+        this.external('route', this._opts.external.route);
     }
 
-    loadSync() {
+    sync() {
         if(this._opts.sync) {
             this.internal('sync/data');
         }
     }
 
-    apiDocs() {
+    docs() {
         if(this._opts.apidocs) {
             this.external('apidocs', 'config.json');
             this.internal('lib', 'apidocs/index');
@@ -192,7 +213,7 @@ class Restlio {
     }
 
     type(key) {
-        return Object.prototype.toString.call(key);
+        return toString.call(key);
     }
 
     set(key, value) {
@@ -204,7 +225,7 @@ class Restlio {
     }
 
     split(str) {
-        if(Object.prototype.toString.call(str) === '[object String]') {
+        if(toString.call(str) === '[object String]') {
             str = str.split('|');
         }
 
@@ -217,7 +238,7 @@ class Restlio {
 
     external(source, options) {
         // external lib'lerin options olarak mutlaka belirtilmesi lazım
-        // eğer options'ı bulamazsa komple source'u yükleyeceği için "options || []" şeklinde kullan
+        // eğer options'ı bulamazsa komple source'u yükler. (options || [])
         this.load(source, options || [], this._opts.basedir);
     }
 
@@ -233,27 +254,26 @@ class Restlio {
 
         source = this.split(source);
         _.each(source, v => this._load.then(v));
-        return false;
     }
 
     listen(cb) {
         this._load.into(this._app, (err) => {
-            if(err) throw err;
+            if(err) {
+                throw err;
+            }
+                
             this._server.listen(this.get('port'), () => {
-                if(this._opts.verbose) {
-                    const _port = this.get('port');
-                    const _worker = this.get('workerid');
-
-                    this._app.lib.logger.instance('Restlio', `server listening, port:${_port}, worker: ${_worker}`);
-                }
+                debug('server listening, port: %s', this.get('port'));
+                debug('worker %s', this.get('workerid'));
+                const end = Date.now();
+                const diff = timediff(start, end, 'Ss');
+                debug(`loaded, ${diff.seconds}.${diff.milliseconds} seconds`);
 
                 if(cb) {
                     cb();
                 }
             });
         });
-
-        return false;
     }
 }
 

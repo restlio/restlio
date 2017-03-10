@@ -1,8 +1,7 @@
 module.exports = app => {
-    const _env      = app.get('env');
-    const _log      = app.lib.logger;
+    const _env = app.get('env');
     const _mongoose = app.core.mongo.mongoose;
-    const _group    = 'MODEL:oauth.accesstokens';
+    const helper = app.lib.utils.helper;
 
     const Schema = {
         accessToken : {type: String, required: true, unique: true, alias: 'accessToken'},
@@ -22,7 +21,9 @@ module.exports = app => {
     AccessTokensSchema.method('saveAccessToken', (token, clientId, expires, userId, cb) => {
         const AccessTokens = _mongoose.model('Oauth_AccessTokens');
 
-        if (userId.id) userId = userId.id;
+        if (userId.id) {
+            userId = userId.id;
+        }
 
         const fields = {
             clientId,
@@ -31,7 +32,9 @@ module.exports = app => {
         };
 
         AccessTokens.update({accessToken: token}, fields, {upsert: true}, err => {
-            if (err) _log.error(_group, err);
+            if (err) {
+                helper.log('error', err);
+            }
             cb(err);
         });
     });

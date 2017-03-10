@@ -6,23 +6,23 @@ module.exports = app => {
     app._loadedServices = [];
 
     _.each(app._services, value => {
-        const _name = value.loader.name;
-        const _depends = value.loader.depends || [];
+        const name = value.loader.name;
+        const depends = value.loader.depends || [];
 
         if(typeof value.loader !== 'function') {
-            return log(`The ${_name} service is not a function`);
+            return log(`The ${name} service is not a function`);
         }
 
-        if(_depends.length) {
-            const _diff = _.difference(_depends, app._loadedServices);
-            if(_diff.length) {
-                return log(`The ${_name} service depends on the [${_diff.join(', ')}] services`);
+        if(depends.length) {
+            const diff = _.difference(depends, app._loadedServices);
+            if(diff.length) {
+                return log(`The ${name} service depends on the [${diff.join(', ')}] services`);
             }
         }
         
         value.loader.call(app, value.opts);
-        app._loadedServices.push(_name);
-        log(`Service loaded: ${_name}, depends on: [${_depends.join(', ')}]`);
+        app._loadedServices.push(name);
+        log(`Service loaded: ${name}, depends on: [${depends.join(', ')}]`);
     });
 
     return true;

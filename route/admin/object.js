@@ -1,18 +1,20 @@
-const async  = require('async');
+const async = require('async');
 const extend = require('extend');
 const moment = require('moment');
-const dot    = require('dotty');
-const qs     = require('qs');
-const _      = require('underscore');
-_.s          = require('underscore.string');
+const dot = require('dotty');
+const qs = require('qs');
+const _ = require('underscore');
+_.s = require('underscore.string');
+const debug = require('debug')('RESTLIO:ROUTE:ADMIN:OBJECT');
 
 module.exports = app => {
-    const _env    = app.get('env');
-    const _log    = app.system.logger;
-    const _form   = app.lib.form;
+    const _env = app.get('env');
+    const _log = app.system.logger;
+    const _form = app.lib.form;
     const _schema = app.lib.schema;
-    const _jobs   = app.boot.kue;
-    const _conf   = app.config[_env].admin; // admin config
+    const _jobs = app.boot.kue;
+    const _conf = app.config[_env].admin; // admin config
+    const helper = app.lib.utils.helper;
     const _system = [
         'oauth.clients',
         'system.accounts',
@@ -23,6 +25,11 @@ module.exports = app => {
         'system.objects',
         'system.roles',
     ];
+
+    const log = (err) => {
+        err.source = 'admin';
+        helper.log('error', err);
+    };
 
     // admin auth endpoints
     app.get('/admin/login', app.lib.auth.loginForm);
@@ -170,10 +177,10 @@ module.exports = app => {
 
             let render = true;
 
-            if(err) _log.info(err);
-            else if( ! results.u ) _log.info('user data not found');
-            else if(results.u.type !== 'Admin') _log.info('user type is not admin'); // type = Admin olanların girişine izin veriyoruz
-            else if( ! results.a ) _log.info('apps data not found');
+            if(err) log(err);
+            else if( ! results.u ) debug('user data not found');
+            else if(results.u.type !== 'Admin') debug('user type is not admin'); // type = Admin olanların girişine izin veriyoruz
+            else if( ! results.a ) debug('apps data not found');
             else render = false;
 
             if(render) {
@@ -197,7 +204,7 @@ module.exports = app => {
             req.session.resources = {};
             if(results.r) {
                 const sorted = Object.keys(results.r).sort();
-                const obj    = {};
+                const obj = {};
 
                 _.each(sorted, (value) => {
                     const sortedArr = value.split('_');
@@ -288,11 +295,13 @@ module.exports = app => {
             }
 
             async.parallel(a, (err, results) => {
-                if(err) _log.error(err);
+                if(err) {
+                    log(err);
+                }
 
                 const objParts = o.split('.');
-                const _slug    = objParts[0];
-                const _object  = [objParts[1]];
+                const _slug = objParts[0];
+                const _object = [objParts[1]];
                 
                 collData(req, res, next, _slug, _object, 60, (err, collResults) => {
                     // console.log(collResults);
@@ -313,7 +322,7 @@ module.exports = app => {
                 });
             });
         } catch(e) {
-            _log.error(e.stack);
+            log(e);
             res.redirect('/admin');
         }
     });
@@ -330,7 +339,7 @@ module.exports = app => {
             const newForm = dot.get(insp, 'Forms.new') || false;
 
             new _form(o).init(req, res, next).prefix('/admin/p/').render(newForm, (err, form) => {
-                if(err) _log.error(err);
+                if(err) log(err);
 
                 res.render('admin/v2/page/object/new', {
                     action : 'save',
@@ -341,21 +350,21 @@ module.exports = app => {
                 });
             });
         } catch(e) {
-            _log.error(e.stack);
+            log(e);
             res.redirect('/admin');
         }
     });
 
     // form for sub object (array of objects)
     app.post('/admin/form/:object/:alias/:index?', (req, res, next) => {
-        const o    = req.params.object;
+        const o = req.params.object;
         const insp = _inspector(req);
 
         if( ! insp ) return res.redirect('/admin');
 
         const alias = req.params.alias;
         const index = parseInt(req.params.index, 10);
-        const id    = req.query.id;
+        const id = req.query.id;
         
         try {
             if(id) {
@@ -401,21 +410,21 @@ module.exports = app => {
                 });
             }
         } catch(e) {
-            _log.error(e.stack);
+            log(e);
             res.redirect('/admin');
         }
     });
     
     // get nested view
     app.get('/admin/o/:object/nested', (req, res, next) => {
-        const o        = req.params.object;
-        const insp     = _inspector(req);
+        const o = req.params.object;
+        const insp = _inspector(req);
 
         if( ! insp ) return res.redirect('/admin');
 
         try {
             const parentId = req.query.parentId || '{null}';
-            const obj      = {
+            const obj = {
                 parentId,
                 sort: 'order',
             };
@@ -430,8 +439,7 @@ module.exports = app => {
 
             // get children
             new _schema(o).init(req, res, next).get(obj, (err, children) => {
-                if(err) _log.error(err);
-
+                if(err) log(err);
                 res.render('admin/v2/page/object/partial/list/nested', {
                     children,
                     opts: insp.Options,
@@ -439,14 +447,14 @@ module.exports = app => {
                 });
             });
         } catch(e) {
-            _log.error(e.stack);
+            log(e);
             res.redirect('/admin');
         }
     });
 
     // update nested data
     app.put('/admin/o/:object/nested/:id', (req, res, next) => {
-        const o    = req.params.object;
+        const o = req.params.object;
         const insp = _inspector(req);
 
         if( ! insp ) return res.redirect('/admin');
@@ -466,11 +474,11 @@ module.exports = app => {
             }
 
             new _schema(o).init(req, res, next).put(req.params.id, obj, (err, children) => {
-                if(err) _log.error(err);
+                if(err) log(err);
                 res.json({});
             });
         } catch(e) {
-            _log.error(e.stack);
+            log(e);
             res.redirect('/admin');
         }
     });
@@ -481,8 +489,8 @@ module.exports = app => {
 
     // save form data
     app.post('/admin/o/:object/save', (req, res, next) => {
-        const o        = req.params.object;
-        const insp     = _inspector(req);
+        const o = req.params.object;
+        const insp = _inspector(req);
         const nocreate = dot.get(insp, 'Options.nocreate');
 
         if( ! insp || nocreate ) return res.redirect('/admin');
@@ -498,7 +506,7 @@ module.exports = app => {
             }
 
             new _schema(o).init(req, res, next).dateFormat().post(req.body, (err, doc) => {
-                if(err) _log.error(err);
+                if(err) log(err);
 
                 if( ! err && doc ) {
                     req.flash('flash', {type: 'success', message: `${_.s.titleize(o)} saved`});
@@ -508,7 +516,7 @@ module.exports = app => {
                 const newForm = dot.get(insp, 'Forms.new') || false;
 
                 new _form(o).init(req, res, next).prefix('/admin/p/').data(req.body).render(newForm, (formErr, form) => {
-                    if(formErr) _log.error(formErr);
+                    if(formErr) log(formErr);
 
                     res.render('admin/v2/page/object/new', {
                         action : 'save',
@@ -520,16 +528,16 @@ module.exports = app => {
                 });
             });
         } catch (e) {
-            _log.error(e.stack);
+            log(e);
             res.redirect('/admin');
         }
     });
 
     // edit form
     app.get('/admin/o/:object/edit/:id', (req, res, next) => {
-        const o      = req.params.object;
-        const id     = req.params.id;
-        const insp   = _inspector(req);
+        const o = req.params.object;
+        const id = req.params.id;
+        const insp = _inspector(req);
         const noedit = dot.get(insp, 'Options.noedit');
 
         if( ! insp || noedit ) return res.redirect('/admin');
@@ -552,7 +560,7 @@ module.exports = app => {
             }
 
             new _schema(o, {format: false}).init(req, res, next).get(params, (err, doc) => {
-                if(err) _log.error(err);
+                if(err) log(err);
 
                 if( err || ! doc ) {
                     req.flash('flash', {type: 'danger', message: `${_.s.titleize(o)} not found`});
@@ -562,7 +570,7 @@ module.exports = app => {
                 const editForm = dot.get(insp, 'Forms.edit') || dot.get(insp, 'Forms.new') || false;
 
                 new _form(o, {edit: true}).init(req, res, next).prefix('/admin/p/').data(doc).render(editForm, (err, form) => {
-                    if(err) _log.error(err);
+                    if(err) log(err);
 
                     res.render('admin/v2/page/object/new', {
                         action : 'update',
@@ -575,7 +583,7 @@ module.exports = app => {
                 });
             });
         } catch (e) {
-            _log.error(e.stack);
+            log(e);
             res.redirect('/admin');
         }
     });
@@ -586,9 +594,9 @@ module.exports = app => {
 
     // update form data
     app.post('/admin/o/:object/update/:id', (req, res, next) => {
-        const o      = req.params.object;
-        const id     = req.params.id;
-        const insp   = _inspector(req);
+        const o = req.params.object;
+        const id = req.params.id;
+        const insp = _inspector(req);
         const noedit = dot.get(insp, 'Options.noedit');
 
         if( ! insp || noedit ) return res.redirect('/admin');
@@ -605,7 +613,7 @@ module.exports = app => {
             }
 
             new _schema(o).init(req, res, next).dateFormat().put(id, req.body, (err, doc) => {
-                if(err) _log.error(err);
+                if(err) log(err);
 
                 if( ! err || doc ) {
                     req.flash('flash', {type: 'success', message: `${_.s.titleize(o)} updated`});
@@ -615,7 +623,7 @@ module.exports = app => {
                 const editForm = dot.get(insp, 'Forms.edit') || dot.get(insp, 'Forms.new') || false;
 
                 new _form(o, {edit: true}).init(req, res, next).prefix('/admin/p/').data(req.body).render(editForm, (formErr, form) => {
-                    if(formErr) _log.error(formErr);
+                    if(formErr) log(formErr);
 
                     res.render('admin/v2/page/object/new', {
                         action : 'update',
@@ -628,7 +636,7 @@ module.exports = app => {
                 });
             });
         } catch (e) {
-            _log.error(e);
+            log(e);
             res.redirect('/admin');
         }
     });
@@ -643,9 +651,9 @@ module.exports = app => {
 
     // remove ids
     app.get('/admin/o/:object/remove/:ids', (req, res, next) => {
-        const o        = req.params.object;
-        let ids        = req.params.ids;
-        const insp     = _inspector(req);
+        const o = req.params.object;
+        let ids = req.params.ids;
+        const insp = _inspector(req);
         const nodelete = dot.get(insp, 'Options.nodelete');
 
         if( ! insp || nodelete ) return res.redirect('/admin');
@@ -666,12 +674,12 @@ module.exports = app => {
             }
 
             async.parallel(a, (err) => {
-                if(err) _log.error(err);
+                if(err) log(err);
                 req.flash('flash', {type: 'success', message: `${_.s.titleize(o)} removed`});
                 res.redirect(`/admin/o/${o}`);
             });
         } catch (e) {
-            _log.error(e.stack);
+            log(e);
             res.redirect('/admin');
         }
     });

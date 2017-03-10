@@ -3,27 +3,29 @@ const dot = require('dotty');
 const debug = require('debug');
 
 // enable mongoose promises
-mongoose.Promise = Promise;
+// mongoose.Promise = Promise;
 
 module.exports = app => {
-    const _env = app.get('env');
-    const _conf = app.config[_env].mongo || dot.get(app.config[_env], 'data.mongo');
-    const _worker = app.get('workerid');
-    const log = debug(`RESTLIO:W${_worker}:CORE:MONGO`);
-    let _auth = '';
+    const env = app.get('env');
+    const conf = app.config[env].mongo || dot.get(app.config[env], 'data.mongo');
+    const worker = app.get('workerid');
+    const log = debug(`RESTLIO:W${worker}:CORE:MONGO`);
+    let auth = '';
 
-    if( ! _conf ) {
+    if( ! conf ) {
         return log('mongo conf not found!');
     }
     
-    if(_conf.user && _conf.pass) {
-        _auth = `${_conf.user}:${_conf.pass}@`;
+    const {user, pass, host, port, db: database, pool, autoIndex, debug: setDebug} = conf;
+
+    if(user && pass) {
+        auth = `${user}:${pass}@`;
     }
 
-    const str = `mongodb://${_auth}${_conf.host}:${_conf.port}/${_conf.db}`;
+    const str = `mongodb://${auth}${host}:${port}/${database}`;
     const db = mongoose.connect(str, {
-        server: {poolSize: parseInt(_conf.pool, 10) || 10},
-        config: {autoIndex: _conf.autoIndex || false},
+        server: {poolSize: parseInt(pool, 10) || 10},
+        config: {autoIndex: autoIndex || false},
     });
 
     // mongoose set event emitter max listeners
@@ -31,17 +33,17 @@ module.exports = app => {
     mongoose.connection.on('error', err => log(err));
     mongoose.connection.on('open', () => log('client connected'));
 
-    if(_conf.debug) {
+    if(setDebug) {
         mongoose.set('debug', true);
     }
         
-    log('CONFIG %o', _conf);
-    log('STRING', str);
+    log('%o', conf);
+    log(str);
 
     // set core object
     const obj = {db, str, mongoose};
     app.core.mongo = obj;
-    app.config[_env].mongo = {str};
+    app.config[env].mongo = {str};
 
     return obj;
 };

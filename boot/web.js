@@ -1,6 +1,6 @@
 const path = require('path');
 const swig = require('swig');
-const helper = require('./helper');
+const swigHelper = require('./helper');
 const compress = require('compression');
 const express = require('express');
 const cookie = require('cookie-parser');
@@ -13,52 +13,52 @@ const kue = require('kue');
 const dot = require('dotty');
 
 module.exports = app => {
-    const _env = app.get('env');
-    const _helper = app.lib.utils.helper;
+    const env = app.get('env');
+    const helper = app.lib.utils.helper;
 
     // set view engine
-    const _viewConf = _helper.bootConf('view');
-    const _viewDir = path.dirname(__dirname);
+    const viewConf = helper.bootConf('view');
+    const viewDir = path.dirname(__dirname);
 
     app.engine('html', swig.renderFile);
     app.set('view engine', 'html');
 
     // set both app view and Restlio folders
     app.set('views', [
-        `${app.get('basedir')}/${_viewConf.dir || 'view'}`,
-        `${_viewDir}/${_viewConf.dir || 'view'}`,
+        `${app.get('basedir')}/${viewConf.dir || 'view'}`,
+        `${viewDir}/${viewConf.dir || 'view'}`,
     ]);
 
-    app.set('view cache', _env === 'production');
-    swig.setDefaults(_viewConf.swig || {});
-    helper.view(swig); // set view helpers
+    app.set('view cache', env === 'production');
+    swig.setDefaults(viewConf.swig || {});
+    swigHelper.view(swig); // set view helpers
 
     // use compression
     app.use(compress());
 
     // use static
-    const _staticConf = _helper.bootConf('static');
-    const _staticDir = path.dirname(__dirname);
+    const staticConf = helper.bootConf('static');
+    const staticDir = path.dirname(__dirname);
 
-    app.use(express.static(`${_staticDir}/${_staticConf.dir || 'public'}`, (_staticConf.options || {}) ));
-    app.use(express.static(`${app.get('basedir')}/${_staticConf.dir || 'public'}`, (_staticConf.options || {}) ));
+    app.use(express.static(`${staticDir}/${staticConf.dir || 'public'}`, (staticConf.options || {}) ));
+    app.use(express.static(`${app.get('basedir')}/${staticConf.dir || 'public'}`, (staticConf.options || {}) ));
 
     // use cookie
     app.use(cookie());
 
     // use session
-    const _sessConf = _helper.bootConf('session') || {};
-    _sessConf.store = new Store({client: app.core.redis.a});
+    const sessConf = helper.bootConf('session') || {};
+    sessConf.store = new Store({client: app.core.redis.a});
 
     // session
-    app.use(session(_sessConf));
+    app.use(session(sessConf));
     
     // use timezone
-    const _timeConf = _helper.bootConf('timezone');
+    const timeConf = helper.bootConf('timezone');
     
     app.all('*', (req, res, next) => {
-        if( req.session && ! req.session.time && _timeConf && _timeConf.default ) {
-            req.session.time = {name: _timeConf.default};
+        if( req.session && ! req.session.time && timeConf && timeConf.default ) {
+            req.session.time = {name: timeConf.default};
         }
 
         req.__time = false;
@@ -88,8 +88,8 @@ module.exports = app => {
         res.locals.req = req;
         res.locals.res = res;
         res.locals.segments = req.url.split('/');
-        res.locals.env = _env;
-        res.locals.config = app.config[_env];
+        res.locals.env = env;
+        res.locals.config = app.config[env];
         res.locals.now = Date.now();
         res.locals.session = req.session;
         res.locals.flash = req.flash('flash');
@@ -114,15 +114,15 @@ module.exports = app => {
     app.boot.cron = CronJob;
 
     // set kue
-    const _workerConf = app.config[_env].redis || dot.get(app.config[_env], 'data.redis');
+    const workerConf = app.config[env].redis || dot.get(app.config[env], 'data.redis');
 
     const redisObj = {
-        port: _workerConf.port,
-        host: _workerConf.host,
+        port: workerConf.port,
+        host: workerConf.host,
     };
 
-    if(_workerConf.pass) {
-        redisObj.auth = _workerConf.pass;
+    if(workerConf.pass) {
+        redisObj.auth = workerConf.pass;
     }
         
     const queue = kue.createQueue({
@@ -132,7 +132,7 @@ module.exports = app => {
         jobEvents: false,
     });
 
-    queue.watchStuckJobs(_workerConf.stuckInterval || 5000);
+    queue.watchStuckJobs(workerConf.stuckInterval || 5000);
 
     app.boot.kue = queue;
 
@@ -140,11 +140,11 @@ module.exports = app => {
     app.use('/admin/kue', kue.app);
 
     // forward by hostname
-    const _forwardConf = _helper.bootConf('forward');
+    const forwardConf = helper.bootConf('forward');
 
     function forwards(req, res, next) {
-        if(_forwardConf[req.hostname]) {
-            req.url = `/${_forwardConf[req.hostname]}${req.url}`;
+        if(forwardConf[req.hostname]) {
+            req.url = `/${forwardConf[req.hostname]}${req.url}`;
         }
 
         next('route');

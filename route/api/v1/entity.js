@@ -1,19 +1,18 @@
 const async = require('async');
-const dot   = require('dotty');
-const _     = require('underscore');
+const dot = require('dotty');
+const _ = require('underscore');
+const debug = require('debug')('RESTLIO:ROUTE:API:ENTITY');
 
 module.exports = app => {
-    const _mdl     = app.middle;
-    const _schema  = app.lib.schema;
-    const _resp    = app.system.response.app;
+    const _mdl = app.middle;
+    const _schema = app.lib.schema;
+    const _resp = app.system.response.app;
     const _emitter = app.lib.schemaEmitter;
-    const _log     = app.lib.logger;
-    const _group   = 'ROUTE:API:V1:ENTITY';
-    
+
     const updateItem = (Item, cond, update, id, name, type, value, field) => cb => {
         Item.update(cond, update, {multi: false}, (err, raw) => {
             if(raw && raw.nModified) {
-                _log.info(`${_group}:EMITTED`, name + type);
+                debug('EMITTED %s', name + type);
                 _emitter.emit(name + type, {id, value});
             }
             
@@ -45,15 +44,15 @@ module.exports = app => {
 
         if(schema) {
             const entity = req.__entityAcl;
-            const id     = req.params.id;
-            const field  = req.params.field;
+            const id = req.params.id;
+            const field = req.params.field;
             const object = req.params.object.toLowerCase().replace('.', '_');
-            const name   = `${object}_${field}_`;
-            const Item   = schema._model;
-            const cond   = {_id: id};
-            let update   = {};
-            const props  = dot.get(schema._save, `properties.${entity.short}`);
-            const a      = [];
+            const name = `${object}_${field}_`;
+            const Item = schema._model;
+            const cond = {_id: id};
+            let update = {};
+            const props = dot.get(schema._save, `properties.${entity.short}`);
+            const a = [];
 
             // TODO: each operator kullan
             if(entity.type === 'array') {

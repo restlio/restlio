@@ -1,3 +1,5 @@
+const _ = require('underscore');
+
 module.exports = app => {
     const _env = app.get('env');
     const _mongoose = app.core.mongo.mongoose;
@@ -15,9 +17,20 @@ module.exports = app => {
      */
 
     const Schema = {
-        ap : {type: ObjectId, required: true, ref: 'System_Apps', alias: 'apps'},
-        n  : {type: String, required: true, alias: 'name'},
-        s  : {type: String, required: true, alias: 'slug'},
+        u  : {type: ObjectId, ref: 'System_Users', alias: 'users'},
+        ur : {type: String, alias: 'users_role'},
+        l  : {type: String, alias: 'level'},
+        n  : {type: String, alias: 'namestr'}, // api
+        c  : {type: String, alias: 'code'}, // api
+        m  : {type: Mixed, alias: 'message'},
+        md : {type: String, alias: 'middleware'}, // api
+        e  : [{type: Mixed, alias: 'errors'}], // api
+        t  : {type: String, alias: 'type'}, // api
+        s  : {type: String, alias: 'source'},
+        sl : {type: String, alias: 'slug'},
+        p  : {type: String, alias: 'path'},
+        ca : {type: Date, default: Date.now, alias: 'created_at'},
+        st : {type: String, alias: 'stackstr'},
     };
 
     /**
@@ -26,8 +39,13 @@ module.exports = app => {
      * ----------------------------------------------------------------
      */
 
+    Schema.l.settings = {label: 'Level'};
     Schema.n.settings = {label: 'Name'};
-    Schema.s.settings = {label: 'Slug'};
+    Schema.c.settings = {label: 'Code'};
+    Schema.t.settings = {label: 'Type'};
+    Schema.s.settings = {label: 'Source'};
+    Schema.m.settings = {label: 'Message'};
+    Schema.st.settings = {label: 'Stack'};
 
     /**
      * ----------------------------------------------------------------
@@ -35,26 +53,30 @@ module.exports = app => {
      * ----------------------------------------------------------------
      */
 
-    const ObjectSchema = app.libpost.model.loader.mongoose(Schema, {
-        Name: 'System_Objects',
+    const LogSchema = app.libpost.model.loader.mongoose(Schema, {
+        Name: 'System_Logs',
         Options: {
-            singular : 'System Object',
-            plural   : 'System Objects',
-            columns  : ['name', 'slug'],
-            main     : 'name',
+            singular : 'System Log',
+            plural   : 'System Logs',
+            columns  : ['level', 'namestr', 'code', 'type', 'source', 'message', 'stackstr'],
+            main     : 'level',
             perpage  : 25,
             nocreate : true,
             nodelete : true,
             noedit   : true,
         },
+        /*
+        Alias: {
+            meta: 'meta',
+        },
+        */
     });
 
     // plugins
-    ObjectSchema.plugin(_query);
+    LogSchema.plugin(_query);
 
     // compound index
-    ObjectSchema.index({ap: 1, n: 1}, {unique: true});
-    ObjectSchema.index({ap: 1, s: 1}, {unique: true});
+    LogSchema.index({u: 1});
 
     /**
      * ----------------------------------------------------------------
@@ -62,7 +84,7 @@ module.exports = app => {
      * ----------------------------------------------------------------
      */
 
-    ObjectSchema.pre('save', function(next) {
+    LogSchema.pre('save', function(next) {
         const self = this;
         self._isNew = self.isNew;
         next();
@@ -74,10 +96,10 @@ module.exports = app => {
      * ----------------------------------------------------------------
      */
 
-    ObjectSchema.post('save', function(doc) {
+    LogSchema.post('save', function(doc) {
         const self = this;
         if(self._isNew) {}
     });
 
-    return _mongoose.model('System_Objects', ObjectSchema);
+    return _mongoose.model('System_Logs', LogSchema);
 };

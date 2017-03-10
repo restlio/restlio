@@ -3,21 +3,22 @@ const dot = require('dotty');
 const debug = require('debug');
 
 module.exports = (app, cb) => {
-    const _env = app.get('env');
-    const _conf = app.config[_env].redis || dot.get(app.config[_env], 'data.redis');
-    const _worker = app.get('workerid');
-    const log = debug(`RESTLIO:W${_worker}:CORE:REDIS`);
+    const env = app.get('env');
+    const conf = app.config[env].redis || dot.get(app.config[env], 'data.redis');
+    const worker = app.get('workerid');
+    const log = debug(`RESTLIO:W${worker}:CORE:REDIS`);
 
-    if( ! _conf ) {
+    if( ! conf ) {
         return log('redis conf not found!');
     }
         
-    const clientA = redis.createClient(_conf.port, _conf.host);
-    const clientB = redis.createClient(_conf.port, _conf.host);
+    const {port, host, pass} = conf;
+    const clientA = redis.createClient(port, host);
+    const clientB = redis.createClient(port, host);
 
-    if(_conf.pass) {
-        clientA.auth(_conf.pass);
-        clientB.auth(_conf.pass);
+    if(pass) {
+        clientA.auth(pass);
+        clientB.auth(pass);
     }
 
     let conn = 0;
@@ -37,7 +38,7 @@ module.exports = (app, cb) => {
 
     clientB.on('error', err => log(err.message));
 
-    log(_conf);
+    log(conf);
     const obj = {a: clientA, b: clientB};
     app.core.redis = obj;
     return obj;

@@ -1,17 +1,17 @@
 const extend = require('extend');
-const dot    = require('dotty');
-const _      = require('underscore');
+const dot = require('dotty');
+const _ = require('underscore');
+const debug = require('debug')('RESTLIO:MODEL_LOADER');
 
 class LibpostModelLoader {
 
     constructor(app) {
-        const self  = this;
-        const group = 'MODEL:LOADER';
-        
+        const self = this;
+        this.helper = app.lib.utils.helper;
+
         try {
             this._app = app;
             this._env = app.get('env');
-            this._log = app.lib.logger;
             this._inspector = app.lib.inspector;
             this._mongo = app.core.mongo;
             this._mongoose = app.core.mongo.mongoose;
@@ -20,29 +20,30 @@ class LibpostModelLoader {
             this._emitter = app.lib.schemaEmitter;
             this._denormalize = app.lib.denormalize;
         } catch(e) {
-            self._log.error(group, e.stack);
+            self.helper.log('error', e);
         }
         
         return this;
     }
 
-    mongoose(schema, options) {
-        const self  = this;
-        const name  = options.Name;
+    mongoose(schema, options = {}) {
+        const self = this;
+        const name = options.Name;
         const lower = name.toLowerCase();
-        const group = `MODEL:${name}`;
         
         try {
             // create schema
             const Schema = this._mongo.db.Schema(schema);
 
             let alias = {};
-            if(options.ArrayOfObjects) {
+            if(options.Alias) {
+                alias = options.Alias;
+            } else if(options.ArrayOfObjects) {
                 alias = options.ArrayOfObjects;
             }
             
             // create inspector
-            const Inspector  = new this._inspector(schema, alias).init();
+            const Inspector = new this._inspector(schema, alias).init();
             Schema.inspector = Inspector;
             // Schema.structure = schema;
 
@@ -54,7 +55,7 @@ class LibpostModelLoader {
                 this._mongoose.connection.on('open', () => {
                     if(self._app.acl) {
                         self._app.acl.allow('superadmin', lower, '*');
-                        self._log.info(`${group}:ACL:ALLOW`, `superadmin:${lower}:*`, 'gray');
+                        debug('acl allow => %s', `superadmin:${lower}:*`);
                     }
                 });
             }
@@ -72,7 +73,7 @@ class LibpostModelLoader {
             
             return Schema;
         } catch(e) {
-            self._log.error(group, e.stack);
+            self.helper.log('error', e);
         }
     }
 
@@ -196,7 +197,7 @@ class LibpostModelLoader {
                 return false;
             }
             
-            self._log.info(`MODEL:LOADER:DENORM:${listener}`, data);
+            debug(`[DENORM] ${listener} %o`, data);
             self._app.lib.denormalize.touch(data, inspector);
         });
     }
@@ -252,7 +253,7 @@ class LibpostModelLoader {
     }
 
     size(name, source, target, inspector) {
-        const self  = this;
+        const self = this;
         const lower = name.toLowerCase();
 
         // Entity api events
@@ -272,14 +273,14 @@ class LibpostModelLoader {
      */
 
     count(name, target, source, inspector) {
-        const self  = this;
+        const self = this;
         const lower = name.toLowerCase();
-        const Save  = inspector.Save.properties;
+        const Save = inspector.Save.properties;
         const Alias = inspector.Alias;
-        const ref   = dot.get(Save, `${Alias[source]}.ref`);
+        const ref = dot.get(Save, `${Alias[source]}.ref`);
 
         if( ! ref ) {
-            return this._log.error('LIBPOST:MODEL:LOADER:COUNT', 'reference not found');
+            return debug('[COUNT] reference not found');
         }
 
         // Model post hook events
@@ -312,14 +313,14 @@ class LibpostModelLoader {
      */
 
     countRef(name, target, source, inspector) {
-        const self  = this;
+        const self = this;
         const lower = name.toLowerCase();
-        const Save  = inspector.Save.properties;
+        const Save = inspector.Save.properties;
         const Alias = inspector.Alias;
-        const ref   = dot.get(Save, `${Alias[source]}.ref`);
+        const ref = dot.get(Save, `${Alias[source]}.ref`);
 
         if( ! ref ) {
-            return this._log.error('LIBPOST:MODEL:LOADER:COUNT_REF', 'reference not found');
+            return debug('[COUNTREF] reference not found');
         }
 
         /**
@@ -345,32 +346,32 @@ class LibpostModelLoader {
      */
 
     hook_push(name, source, target, inspector) {
-        const self  = this;
+        const self = this;
         const lower = name.toLowerCase();
-        const Save  = inspector.Save.properties;
+        const Save = inspector.Save.properties;
         const Alias = inspector.Alias;
-        target      = target.split(':');
-        const ref   = dot.get(Save, `${Alias[target[0]]}.ref`);
+        target = target.split(':');
+        const ref = dot.get(Save, `${Alias[target[0]]}.ref`);
 
         if( ! ref ) {
-            return this._log.error('LIBPOST:MODEL:LOADER:HOOK_PUSH', 'reference not found');
+            return debug('[HOOK_PUSH] reference not found');
         }
 
         // reference model
-        const Model      = this._mongoose.model(ref);
+        const Model = this._mongoose.model(ref);
         const ModelAlias = dot.get(Model.schema, 'inspector.Alias');
 
         // addToSet ile target modele push et
         this._emitter.on(`${lower}_model_saved`, data => {
-            const doc       = data.doc;
+            const doc = data.doc;
             const SourceVal = doc[Alias[source]];
             
             if( ! SourceVal ) {
                 return false;
             }
 
-            const update      = {$addToSet: {}};
-            const type        = Object.prototype.toString.call(SourceVal);
+            const update = {$addToSet: {}};
+            const type = Object.prototype.toString.call(SourceVal);
             const TargetField = ModelAlias[target[1]];
             
             if(type === '[object Array]') {
@@ -415,7 +416,7 @@ class LibpostModelLoader {
         
         Model.update({_id: id}, update, {}, (err) => {
             if(err) {
-                self._log.error('LIBPOST:MODEL:LOADER:HOOK_PUSH', err);
+                self.helper.log('error', err);
             }
 
             // find and save target model
@@ -442,13 +443,13 @@ class LibpostModelLoader {
      */
 
     _incr(model, field, id, num, decr) {
-        num          = Math.abs(parseInt(num || 1, 10));
-        const self   = this;
-        const Model  = this._mongoose.model(model);
-        let cond     = {};
+        num = Math.abs(parseInt(num || 1, 10));
+        const self = this;
+        const Model = this._mongoose.model(model);
+        let cond = {};
         const update = {$inc: {}};
-        let opts     = {multi: true};
-        const Alias  = dot.get(Model.schema, 'inspector.Alias');
+        let opts = {multi: true};
+        const Alias = dot.get(Model.schema, 'inspector.Alias');
 
         if(Alias && Alias[field]) {
             field = Alias[field];
@@ -465,13 +466,17 @@ class LibpostModelLoader {
             opts = {multi: false};
         }
 
-        if(decr) num *= -1;
+        if(decr) {
+            num *= -1;
+        }
 
         // set update
         update.$inc[field] = num;
 
         Model.update(cond, update, opts, (err) => {
-            if(err) self._log.error('LIBPOST:MODEL:LOADER:INCR', err);
+            if(err) {
+                self.helper.log('error', err);
+            }
         });
     }
 

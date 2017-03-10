@@ -1,22 +1,24 @@
 const Bottle = require('bottlejs');
 const winston = require('winston');
+const dot = require('dotty');
 
 module.exports = app => {
-    const _env = app.get('env');
+    const env = app.get('env');
 
     // set winston
     winston.emitErrs = false; // don't supress errors
-    const _logConf = app.config[_env].logger;
+    const logConf = app.config[env].logger;
     const logger = new winston.Logger({exitOnError: false});
 
-    // add transport
-    logger.add(winston.transports[_logConf.transport], _logConf.options);
+    // add transport (usually console)
+    logger.add(winston.transports[logConf.transport], logConf.options);
 
     app.system = {logger};
 
     // set uncaught exception
     process.on('uncaughtException', err => {
-        // console.log('uncaughtException', err);
+        err.source = 'uncaught';
+        app.lib.utils.helper.log('error', err);
     });
     
     // set container

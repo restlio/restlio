@@ -1,19 +1,17 @@
 const dot = require('dotty');
-const _   = require('underscore');
+const _ = require('underscore');
+const debug = require('debug')('RESTLIO:MODEL:SYSTEM_INVITES');
 
 module.exports = app => {
-    const _env      = app.get('env');
-    const _log      = app.lib.logger;
-    const _conf     = app.config[_env];
+    const _env = app.get('env');
+    const _conf = app.config[_env];
     const _mongoose = app.core.mongo.mongoose;
-    const _query    = app.lib.query;
-    const _emitter  = app.lib.schemaEmitter;
-    const _mailer   = app.lib.mailer;
-    const _group    = 'MODEL:system.invites';
+    const _query = app.lib.query;
+    const _mailer = app.lib.mailer;
+    const helper = app.lib.utils.helper;
 
     // types
-    const ObjectId  = _mongoose.Schema.Types.ObjectId;
-    const Mixed     = _mongoose.Schema.Types.Mixed;
+    const ObjectId = _mongoose.Schema.Types.ObjectId;
 
     /**
      * ----------------------------------------------------------------
@@ -107,10 +105,10 @@ module.exports = app => {
 
             Apps.findById(doc.ap, (err, apps) => {
                 if( err || ! apps ) {
-                    return _log.info(_group, 'not found app data for system.invites');
+                    return debug('not found app data for system.invites');
                 }
 
-                const slug     = apps.s;
+                const slug = apps.s;
                 const moderate = dot.get(_conf, `app.config.${slug}.auth.invite_moderation`) ||
                                  dot.get(_conf, `auth.${slug}.auth.invite_moderation`);
 
@@ -126,14 +124,15 @@ module.exports = app => {
                             endpoint: mailConf.endpoints.invite,
                             token: doc.it,
                         }, (err, html) => {
-                            if(err) _log.error(_group, err);
+                            if(err) {
+                                helper.log('error', err);
+                            }
 
                             if(html) {
-                                mailObj.to   = doc.em;
+                                mailObj.to = doc.em;
                                 mailObj.html = html;
 
-                                _log.info(`${_group}:MAIL_OBJ`, mailObj);
-
+                                debug('[MAIL OBJ] %o', mailObj);
                                 const _transport = app.boot.mailer;
                                 new _mailer(_transport).send(mailObj);
                             }
@@ -142,10 +141,12 @@ module.exports = app => {
                         // flag invitation as "sent"
                         doc.es = 'Y';
                         doc.save(err => {
-                            if(err) _log.error(_group, err);
+                            if(err) {
+                                helper.log('error', err);
+                            }
                         });
                     } else {
-                        _log.info(`${_group}:MAIL_OBJ`, 'not found');
+                        debug('[MAIL OBJ] not found');
                     }
                 }
             });

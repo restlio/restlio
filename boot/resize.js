@@ -5,8 +5,8 @@ const debug = require('debug');
 const ir = require('image-resizer-tmp');
 
 module.exports = app => {
-    const _env = app.get('env');
-    const _resize = app.config[_env].resize;
+    const env = app.get('env');
+    const resize = app.config[env].resize;
     const log = debug('RESTLIO:BOOT:RESIZE');
 
     function setEnv(key, value) {
@@ -15,7 +15,7 @@ module.exports = app => {
 
     try {
         const target = ['local', 's3', 'cloudinary'];
-        const conf = dot.get(app.config[_env], 'app.config.upload') || app.config[_env].upload;
+        const conf = dot.get(app.config[env], 'app.config.upload') || app.config[env].upload;
         
         if( ! conf ) {
             return log('upload conf not found');
@@ -58,20 +58,20 @@ module.exports = app => {
             let size = url[1].split('/');
 
             // development için izin ver
-            if(_env === 'development') {
+            if(env === 'development') {
                 log('allowed for development');
                 return next('route');
             }
 
-            if(size && size.length && _resize) {
+            if(size && size.length && resize) {
                 size = size[0];
                 
-                if( ! _resize[req.hostname] ) {
+                if( ! resize[req.hostname] ) {
                     log('not found hostname');
                     return res.status(404).end();
                 }
                 
-                if( !_resize[req.hostname].includes(size) ) {
+                if( ! resize[req.hostname].includes(size) ) {
                     log('not allowed image size');
                     return res.status(404).end();
                 }

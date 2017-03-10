@@ -1,8 +1,7 @@
 module.exports = app => {
-    const _env      = app.get('env');
-    const _log      = app.lib.logger;
+    const _env = app.get('env');
     const _mongoose = app.core.mongo.mongoose;
-    const _group    = 'MODEL:oauth.authcodes';
+    const helper = app.lib.utils.helper;
 
     const Schema = {
         authCode : {type: String, required: true, unique: true, alias: 'authCode'},
@@ -31,7 +30,9 @@ module.exports = app => {
         };
 
         AuthCodes.update({authCode: code}, fields, {upsert: true}, err => {
-            if (err) _log.error(_group, err);
+            if (err) {
+                helper.log('error', err);
+            }
             cb(err);
         });
     });

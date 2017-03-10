@@ -1,9 +1,6 @@
 require('extend-error');
 
-function responseHandler(name, code, data, res) {
-    code = code || 200;
-    data = data || null;
-
+function responseHandler(name, code = 200, data = null, res) {
     const response = {
         meta: {name, code}, data,
     };
@@ -11,18 +8,18 @@ function responseHandler(name, code, data, res) {
     res.status(code).json(response);
 }
 
-// Response to a successful GET, PUT, PATCH or DELETE. Can also be used for a POST that doesn't result in a creation.
+// --- Response to a successful GET, PUT, PATCH or DELETE. Can also be used for a POST that doesn't result in a creation.
 exports.OK = (message, res) => {
     responseHandler('OK', 200, message, res);
 };
 
-// Response to a POST that results in a creation.
-// Should be combined with a Location header pointing to the location of the new resource
+// --- Response to a POST that results in a creation.
+// --- Should be combined with a Location header pointing to the location of the new resource
 exports.Created = (message, res) => {
     responseHandler('Created', 201, message, res);
 };
 
-// Response to a successful request that won't be returning a body (like a DELETE request)
+// --- Response to a successful request that won't be returning a body (like a DELETE request)
 exports.NoContent = (message, res) => {
     responseHandler('NoContent', 204, message, res);
 };

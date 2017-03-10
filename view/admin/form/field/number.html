@@ -3,7 +3,7 @@
 <div id="field-{{ field.alias }}" class="f-number form-group">
     <label for="f-{{ key }}">{{ field.settings.label }}</label>
     <div class="f-number-wrap">
-        <input name="{{key}}" id="f-{{ key }}" type="number" class="form-control {% if opts.filter %}input-sm{% endif %}" placeholder="{{ field.settings.label }}" value="{% if data %}{{ data }}{% else %}0{% endif %}" />
+        <input name="{{key}}" id="f-{{ key }}" type="number" class="form-control {% if opts.filter %}input-sm{% endif %}" placeholder="{{ field.settings.label }}" value="{% if data %}{{ data }}{% else %}{% endif %}" />
         {% include "../filter/text.html" %}
     </div>
 </div>

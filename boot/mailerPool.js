@@ -3,21 +3,21 @@ const pool = require('nodemailer-smtp-pool');
 const _ = require('underscore');
 
 module.exports = app => {
-    const _conf = app.lib.utils.helper.bootConf('mailer');
+    const conf = app.lib.utils.helper.bootConf('mailer');
     
-    if( ! _conf ) {
+    if( ! conf ) {
         return false;
     }
 
     // birden fazla config varsa hepsi için client oluşturuyoruz
-    if( ! _conf.service ) {
+    if( ! conf.service ) {
         const obj = {};
-        _.each(_conf, (val, key) => {
+        _.each(conf, (val, key) => {
             obj[key] = mailer.createTransport(pool(val));
         });
 
         return obj;
     }
     
-    return mailer.createTransport(pool(_conf));
+    return mailer.createTransport(pool(conf));
 };

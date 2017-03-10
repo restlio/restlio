@@ -1,0 +1,52 @@
+{
+    "basic": {
+        "config": {"type": "function"}
+    },
+    "app": {
+        "options": {},
+        "load": {
+            "config": "predefined",
+            "start": {"key": "boot/start|lib/logger"},
+            "data": {"key": "core/mongo|core/redis|core/cache"},
+            "lib/base": {"key": "lib", "value": "utils/helper|cache|denormalize|index|inspector|query|schema|schemaBase"},
+            "lib/other": {"key": "lib", "value": "auth|form|mailer|paginate|randomize|request|upload|user"},
+            "lib/post": {"type": "function", "func": "libPost"},
+            "middle": {"type": "function"},
+            "model": {"type": "function"},
+            "service": {"type": "function"},
+            "response": {"key": "system/response/app"},
+            "boot/api": {"key": "boot/api"},
+            "route/api": {"type": "function", "func": "routeApi"},
+            "boot/web": {"key": "boot/web"},
+            "boot/app": {"type": "function", "func": "bootApp"},
+            "service/init": {"type": "function", "func": "serviceInit"},
+            "route/app": {"type": "function", "func": "routeApp"},
+            "route/admin": {"key": "route/admin"},
+            "resize": {"type": "function"},
+            "handler": {"key": "system/handler/app"},
+            "sync": {"type": "function"},
+            "docs": {"type": "function"},
+            "listen": {"type": "function"}
+        }
+    },
+    "workers": {
+        "options": {
+            "isworker": true
+        },
+        "load": {
+            "config": "predefined",
+            "start": {"key": "boot/start|lib/logger"},
+            "data": {"key": "core/mongo|core/redis|core/cache"},
+            "lib/base": {"key": "lib", "value": "utils/helper|cache|denormalize|index|inspector|query|schema|schemaBase"},
+            "lib/other": {"key": "lib", "value": "auth|form|mailer|paginate|randomize|request|upload|user"},
+            "lib/post": {"type": "function", "func": "libPost"},
+            "middle": {"type": "function"},
+            "model": {"type": "function"},
+            "service": {"type": "function"},
+            "boot/worker": {"key": "boot/worker"},
+            "boot/app": {"type": "function", "func": "bootApp"},
+            "service/init": {"type": "function", "func": "serviceInit"},
+            "worker": {"type": "function"}                        
+        }            
+    }
+}

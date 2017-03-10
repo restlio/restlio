@@ -1,21 +1,20 @@
 const async = require('async');
-const dot   = require('dotty');
-const fs    = require('fs');
-const _     = require('underscore');
+const dot = require('dotty');
+const fs = require('fs');
+const _ = require('underscore');
+const debug = require('debug')('RESTLIO:SYNC_DATA');
 
 module.exports = (app, loadCb) => {
+    const _env = app.get('env');
+    const _schema = app.lib.schema;
+    const _mongoose = app.core.mongo.mongoose;
+    const _c = app.config[_env];
+    const workerId = parseInt(app.get('workerid'), 10);
+    const helper = app.lib.utils.helper;
 
-    const _log      = app.lib.logger;
-    const _env      = app.get('env');
-    const _schema   = app.lib.schema;
-	const _mongoose = app.core.mongo.mongoose;
-	const _c        = app.config[_env];
-    const _group    = 'SYNC:DATA';
-    const workerId  = parseInt(app.get('workerid'));
-    
     if(workerId !== 0) {
         loadCb();
-        return false;        
+        return false;
     }
 
     // async object
@@ -36,8 +35,9 @@ module.exports = (app, loadCb) => {
                     let schema = new _schema('system.apps').init(app);
 
                     schema.get({slug: value.slug, qt: 'one'}, (err, apps) => {
-                        if(err)
-                            _log.error(`${_group}:APPS:GET`, err);
+                        if(err) {
+                            helper.log('error', err);
+                        }
                         
                         if( ! err && apps ) {
                             schema = null;
@@ -45,8 +45,9 @@ module.exports = (app, loadCb) => {
                         }
 
                         schema.post(value, (err, apps) => {
-                            if(err)
-                                _log.error(`${_group}:APPS:POST`, err);
+                            if(err) {
+                                helper.log('error', err);
+                            }
                             
                             schema = null;
                             cb(null, apps);
@@ -60,15 +61,15 @@ module.exports = (app, loadCb) => {
     // auth middleware'de eğer kullanıcı yoksa user.id = 'guest' olarak set ediliyor,
     // user.id = 'guest' için guest role'ü set edilmeli
     function guestRole(role, currApp) {
-        if(role.slug == 'guest') {
+        if(role.slug === 'guest') {
             app.acl.addUserRoles('guest', `${currApp.slug}_guest`);
-            _log.info(`${_group}:GUEST:ACL:ADD_USER_ROLES`, `guest user acl created for ${currApp.name}`);
+            debug(`[GUEST ACL ADD USER ROLES] guest user acl created for ${currApp.name}`);
         }
     }
 
     // execute parallel
     async.parallel(a, (err, apps) => {
-        _log.info(`${_group}:APPS`, apps);
+        debug('APPS %o', apps);
 
         // async object
         a = {};
@@ -96,8 +97,9 @@ module.exports = (app, loadCb) => {
                             guestRole(role_value, currApp);
 
                             schema.get({apps: currId, slug: role_value.slug, qt: 'one'}, (err, role) => {
-                                if(err)
-                                    _log.error(`${_group}:ROLES:GET`, err);
+                                if(err) {
+                                    helper.log('error', err);
+                                }
                                 
                                 if( ! err && role ) {
                                     schema = null;
@@ -106,8 +108,9 @@ module.exports = (app, loadCb) => {
 
                                 role_value.apps = currId;
                                 schema.post(role_value, (err, role) => {
-                                    if(err)
-                                        _log.error(`${_group}:ROLES:POST`, err);
+                                    if(err) {
+                                        helper.log('error', err);
+                                    }
                                     
                                     schema = null;
                                     cb(null, role);
@@ -156,15 +159,13 @@ module.exports = (app, loadCb) => {
             _.each(models, (value, key) => {
                 // inspector eklenmemiş veya appName'i olmayan modelleri resource kabul etmiyoruz
                 if( ! value.schema.inspector || ! value.appName ) {
-                    _log.info(_group, `inspector or app name not found, ${key}`);
-                    return;
+                    return debug(`inspector or app name not found, ${key}`);
                 }
 
                 const currApp = apps[`app_${value.appName}`];
 
                 if( ! currApp ) {
-                    _log.info(_group, `curr app not found, ${key}`);
-                    return;
+                    return debug(`curr app not found, ${key}`);
                 }
 
                 // get app id
@@ -176,8 +177,9 @@ module.exports = (app, loadCb) => {
                         let plural = dot.get(value.schema, 'inspector.Options.plural');
 
                         schema.get({apps: currId, slug: key, qt: 'one'}, (err, object) => {
-                            if(err)
-                                _log.error(`${_group}:OBJECTS:GET`, err);
+                            if(err) {
+                                helper.log('error', err);
+                            }
                             
                             if( ! err && object ) {
                                 schema = plural = null;
@@ -185,8 +187,9 @@ module.exports = (app, loadCb) => {
                             }
 
                             schema.post({apps: currId, name: plural || key, slug: key}, (err, object) => {
-                                if(err)
-                                    _log.error(`${_group}:OBJECTS:POST`, err);
+                                if(err) {
+                                    helper.log('error', err);
+                                }
                                 
                                 schema = plural = null;
                                 cb(null, object);
@@ -199,9 +202,7 @@ module.exports = (app, loadCb) => {
 
         // execute parallel
         async.parallel(a, (err, results) => {
-            _log.info(`${_group}:RESULTS`, 'listing...');
-            // console.log(results);
-            
+            debug('[RESULTS] listing %O', results);
             const series = {};
 
             /**
@@ -216,8 +217,9 @@ module.exports = (app, loadCb) => {
                     // (superadmin tüm object'ler için full acl izinlerine sahip)
                     const currApp = apps.app_system;
 
-                    if( ! currApp )
+                    if( ! currApp ) {
                         return cb();
+                    }
 
                     // get app id
                     const currId = currApp._id.toString();
@@ -228,7 +230,7 @@ module.exports = (app, loadCb) => {
                         if( ! err && user ) {
                             schema = null;
                             app.acl.addUserRoles(user._id.toString(), 'superadmin');
-                            _log.info(`${_group}:GUEST:ACL:ADD_USER_ROLES`, `superadmin user acl created for ${currApp.name}`);
+                            debug(`[GUEST ACL ADD USER ROLES] superadmin user acl created for ${currApp.name}`);
                             return cb(err, user);
                         }
 
@@ -238,7 +240,7 @@ module.exports = (app, loadCb) => {
                         schema.post(_c.api.admin.user, (err, user) => {
                             if(user) {
                                 app.acl.addUserRoles(user._id.toString(), 'superadmin');
-                                _log.info(`${_group}:GUEST:ACL:ADD_USER_ROLES`, `superadmin user acl created for ${currApp.name}`);
+                                debug(`[GUEST ACL ADD USER ROLES] superadmin user acl created for ${currApp.name}`);
                             }
 
                             schema = null;
@@ -262,8 +264,9 @@ module.exports = (app, loadCb) => {
                     _.each(_c.roles, (value, key) => {
                         const currApp = apps[`app_${key}`];
 
-                        if( ! currApp )
-                            return;
+                        if( ! currApp ) {
+                            return debug('[ACTIONS] current app not found');
+                        }
 
                         // get app id
                         const currId = currApp._id.toString();
@@ -284,10 +287,11 @@ module.exports = (app, loadCb) => {
                                     // actVal: get, get* gibi geliyor
                                     _.each(masterData, (mVal, mKey) => {
                                         // mVal: get*, post*, put*, delete*
-                                        if(actVal == mVal) {
+                                        if(actVal === mVal) {
                                             const index = action.indexOf(actVal);
-                                            if (index > -1)
+                                            if (index > -1) {
                                                 action.splice(index, 1);
+                                            }
 
                                             master.push(mVal);
                                         }
@@ -305,16 +309,14 @@ module.exports = (app, loadCb) => {
                                         apps    : currId,
                                         roles   : role,
                                         objects : object,
-                                        qt      : 'one'
+                                        qt      : 'one',
                                     },
                                     (err, currAction) => {
                                         if(currAction) {
                                             mAction.put(currAction._id.toString(), {action, master}, (err, affected) => {
-                                                // if(err)
-                                                //    _log.info(err);
-
-                                                if( ! err && affected )
-                                                    _log.info(`${_group}:ACTION:UPDATED`, currAction._id.toString());
+                                                if( ! err && affected ) {
+                                                    debug('[ACTION:UPDATED] %s', currAction._id.toString());
+                                                }
 
                                                 mAction = null;
                                             });
@@ -327,15 +329,13 @@ module.exports = (app, loadCb) => {
                                             roles   : role,
                                             objects : object,
                                             master,
-                                            action
+                                            action,
                                         };
 
                                         mAction.post(obj, (err, action) => {
-                                            // if(err)
-                                            //    _log.info(err);
-
-                                            if( ! err && action )
-                                                _log.info(`${_group}:ACTION:CREATED`, action._id.toString());
+                                            if( ! err && action ) {
+                                                debug('[ACTION:CREATED] %s', action._id.toString());
+                                            }
 
                                             mAction = null;
                                         });
@@ -356,26 +356,22 @@ module.exports = (app, loadCb) => {
              */
 
             if(dot.get(_c, 'sync.data.userroles')) {
-
                 series.userroles = cb => {
                     const schema = new _schema('system.users').init(app);
 
                     schema.stream({limit: 100000}, (err, users) => {
-
                         users.on('data', user => {
                             // TODO: fazla sayıda kullanıcı olması durumunda burasının kuyrukta çalışması gerekecek
                             new app.lib.user(app).addRole(user);
                         }).on('error', err => {
-                            _log.error(_group, err);
+                            helper.log('error', err);
                         }).on('end', () => {
-                            _log.info(_group, 'user roles sync stream end');
+                            debug('user roles sync stream end');
                         });
-
                     });
-	                
-	                cb();
+                
+                    cb();
                 };
-
             }
 
             /**
@@ -385,11 +381,9 @@ module.exports = (app, loadCb) => {
              */
 
             if(dot.get(_c, 'sync.data.docs')) {
-
                 series.docs = cb => {
                     new app.lib.apidocs.index(app, cb);
                 };
-
             }
 
             /**
@@ -401,43 +395,39 @@ module.exports = (app, loadCb) => {
             const usersApp = dot.get(_c, 'sync.fill_users_apps');
             
             if(usersApp && Object.keys(usersApp).length) {
-
                 series.userapps = cb => {
-                    
                     _.each(usersApp, (status, model) => {
-                        if( ! status )
+                        if( ! status ) {
                             return;
+                        }
                         
                         (((model, schema, app, mongoose) => {
                             const m = new schema(model).err().init(app);
 
-	                        if( ! m )
-	                            return false;
-	                        
+                            if( ! m ) {
+                                return false;
+                            }
+                            
                             m.stream({limit: 100000}, (err, profiles) => {
-
-	                            const Users = mongoose.model('System_Users');
-	                            
+                                const Users = mongoose.model('System_Users');
+                            
                                 profiles.on('data', profile => {
-                
-	                                if( ! profile || ! profile.u || ! profile.ap )
-	                                    return;
+                                    if( ! profile || ! profile.u || ! profile.ap ) {
+                                        return;
+                                    }
 
-	                                Users.update({_id: profile.u}, {$addToSet: {ap: profile.ap}}, {}, (err, raw) => {});
-                
+                                    Users.update({_id: profile.u}, {$addToSet: {ap: profile.ap}}, {}, (err, raw) => {});
                                 }).on('error', err => {
-                                    _log.error(_group, err);
+                                    helper.log('error', err);
                                 }).on('end', () => {
-                                    _log.info(_group, `${model} sync stream end`);
+                                    debug(`${model} sync stream end`);
                                 });
-
-                            });                            
+                            });
                         }))(model, _schema, app, _mongoose);
                     });
-	                
-	                cb();
+                    
+                    cb();
                 };
-
             }
             
             /**
@@ -448,28 +438,24 @@ module.exports = (app, loadCb) => {
 
             async.series(series, (err, results = {}) => {
                 if(err) {
-                    _log.error(_group, err);
+                    helper.log('error', err);
                     return loadCb();
                 }
 
                 if( ! Object.keys(results).length ) {
-                    _log.info(`${_group}:SERIES:RESULTS`, 'not found!');
+                    debug('[SERIES:RESULTS] not found!');
                     return loadCb();
                 }
 
-                _log.info(`${_group}:SERIES:RESULTS`, 'listing...');
-                // console.log(results);
-                
-                if(Object.keys(results).length)
-                    _log.info(_group, 'sync data executed!');
+                debug('[SERIES:RESULTS] listing %O', results);
+                if(Object.keys(results).length) {
+                    debug('sync data executed!');
+                }
                 
                 setTimeout(() => {
-                    loadCb();     
-                }, 500);
+                    loadCb();
+                }, 200);
             });
-
         });
-
     });
-
 };

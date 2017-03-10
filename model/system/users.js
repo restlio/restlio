@@ -1,17 +1,17 @@
-const async  = require('async');
-const uuid   = require('uuid');
-const php    = require('phpjs');
-const _      = require('underscore');
+const async = require('async');
+const uuid = require('uuid');
+const php = require('phpjs');
+const _ = require('underscore');
+const debug = require('debug')('RESTLIO:MODEL:SYSTEM_USERS');
 
 module.exports = app => {
-    const _log      = app.lib.logger;
     const _mongoose = app.core.mongo.mongoose;
-    const _query    = app.lib.query;
-    const _emitter  = app.lib.schemaEmitter;
-    const _helper   = app.lib.utils.helper;
+    const _query = app.lib.query;
+    const _emitter = app.lib.schemaEmitter;
+    const _helper = app.lib.utils.helper;
 
     // types
-    const ObjectId  = _mongoose.Schema.Types.ObjectId;
+    const ObjectId = _mongoose.Schema.Types.ObjectId;
 
     /**
      * ----------------------------------------------------------------
@@ -49,10 +49,11 @@ module.exports = app => {
      */
 
     Schema.ap[0].settings = {label: 'Apps', display: 'name'};
-    Schema.em.settings    = {label: 'Email'};
-    Schema.pa.settings    = {label: 'Password'};
-    Schema.na.settings    = {label: 'Name'};
-    Schema.ie.settings    = {
+    Schema.em.settings = {label: 'Email'};
+    Schema.pa.settings = {label: 'Password'};
+    Schema.na.settings = {label: 'Name'};
+
+    Schema.ie.settings = {
         label: 'Is Enabled ?',
         options: [
             {label: 'Yes', value: 'Y'},
@@ -133,7 +134,7 @@ module.exports = app => {
             self.pa = '';
         }
 
-        self._isNew     = self.isNew;
+        self._isNew = self.isNew;
         self._lastLogin = self.isModified('ll');
         
         next();
@@ -177,7 +178,7 @@ module.exports = app => {
         roles = _helper.mapToString(roles);
         roles = _.uniq(roles);
 
-        const Apps  = _mongoose.model('System_Apps');
+        const Apps = _mongoose.model('System_Apps');
         const Roles = _mongoose.model('System_Roles');
         let a;
 
@@ -192,10 +193,12 @@ module.exports = app => {
             };
 
             async.parallel(a, (err, results) => {
-                if(err) return _log.error(err);
+                if(err) {
+                    return _helper.log('error', err);
+                }
 
                 if( ! results || ! results.roles || ! results.roles.length ) {
-                    return _log.info('roles not found');
+                    return debug('roles not found');
                 }
 
                 const roleData = results.roles;
@@ -209,7 +212,7 @@ module.exports = app => {
                 // get apps data
                 Apps.find({_id: {$in: apps}}).exec((err, apps) => {
                     if( err || ! apps ) {
-                        return _log.info('apps not found');
+                        return debug('apps not found');
                     }
 
                     // use apps _id as key
@@ -239,7 +242,7 @@ module.exports = app => {
 
                             if(doc.ro) {
                                 app.acl.addUserRoles(doc._id.toString(), doc.ro);
-                                return _log.info(`ACL:ADD_USER_ROLES:${doc._id}`, doc.ro);
+                                return debug(`[ACL ADD USER ROLES] ${doc._id} %o`, doc.ro);
                             }
                         }
 
@@ -252,22 +255,22 @@ module.exports = app => {
 
                     // new roles (role slug'larını alıyoruz)
                     let newRoles = php.array_diff(doc.ro, self._original.ro);
-                    newRoles     = _.map(Object.keys(newRoles), key => newRoles[key]);
-                    newRoles     = _role_name(newRoles, rolesObj);
+                    newRoles = _.map(Object.keys(newRoles), key => newRoles[key]);
+                    newRoles = _role_name(newRoles, rolesObj);
 
                     if(app.acl && newRoles.length) {
                         app.acl.addUserRoles(doc._id.toString(), newRoles);
-                        _log.info(`ACL:ADD_USER_ROLES:${doc._id}`, newRoles);
+                        debug(`[ACL ADD USER ROLES] ${doc._id} %o`, newRoles);
                     }
 
                     // old roles (role slug'larını alıyoruz)
                     let oldRoles = php.array_diff(self._original.ro, doc.ro);
-                    oldRoles     = _.map(Object.keys(oldRoles), key => oldRoles[key]);
-                    oldRoles     = _role_name(oldRoles, rolesObj);
+                    oldRoles = _.map(Object.keys(oldRoles), key => oldRoles[key]);
+                    oldRoles = _role_name(oldRoles, rolesObj);
 
                     if(app.acl && oldRoles.length) {
                         app.acl.removeUserRoles(doc._id.toString(), oldRoles);
-                        _log.info(`ACL:REMOVE_USER_ROLES:${doc._id}`, oldRoles);
+                        debug(`[ACL REMOVE USER ROLES] ${doc._id} %o`, oldRoles);
                     }
 
                     return false;
@@ -286,14 +289,14 @@ module.exports = app => {
 
     UserSchema.post('remove', function(doc) {
         const self = this;
-        doc        = doc.toJSON();
-        const id   = doc._id.toString();
+        doc = doc.toJSON();
+        const id = doc._id.toString();
 
         // kayıt silinmesi durumunda rolleri siliyoruz
         if (app.acl && doc.ro.length) {
             doc.ro = _helper.mapToString(doc.ro);
 
-            const Apps  = _mongoose.model('System_Apps');
+            const Apps = _mongoose.model('System_Apps');
             const Roles = _mongoose.model('System_Roles');
 
             const a = {
@@ -305,10 +308,12 @@ module.exports = app => {
             };
 
             async.parallel(a, (err, results) => {
-                if(err) return _log.error(err);
+                if(err) {
+                    return _helper.log('error', err);
+                }
 
                 if( ! results || ! results.roles ) {
-                    return _log.info('roles not found (remove)');
+                    return debug('roles not found');
                 }
 
                 const roleData = results.roles;
@@ -322,7 +327,7 @@ module.exports = app => {
                 // get apps data
                 Apps.find({_id: {$in: apps}}).exec((err, apps) => {
                     if ( err || ! apps ) {
-                        return _log.info('apps not found');
+                        return debug('apps not found');
                     }
 
                     // use apps _id as key
@@ -340,7 +345,7 @@ module.exports = app => {
 
                     doc.ro = _.map(doc.ro, key => rolesObj[key]);
                     app.acl.removeUserRoles(doc._id.toString(), doc.ro);
-                    _log.info(`ACL:REMOVE_USER_ROLES:${doc._id}`, doc.ro);
+                    debug(`[ACL REMOVE USER ROLES] ${doc._id} %o`, doc.ro);
                     return false;
                 });
 

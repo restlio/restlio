@@ -1,18 +1,18 @@
 const async = require('async');
-const php   = require('phpjs');
-const _     = require('underscore');
+const php = require('phpjs');
+const _ = require('underscore');
+const debug = require('debug')('RESTLIO:MODEL:SYSTEM_ACTIONS');
 
 module.exports = app => {
-    const _env      = app.get('env');
-    const _log      = app.lib.logger;
+    const _env = app.get('env');
     const _mongoose = app.core.mongo.mongoose;
-    const _query    = app.lib.query;
-    const _emitter  = app.lib.schemaEmitter;
-    const _group    = 'MODEL:system.actions';
+    const _query = app.lib.query;
+    const _emitter = app.lib.schemaEmitter;
+    const helper = app.lib.utils.helper;
 
     // types
-    const ObjectId  = _mongoose.Schema.Types.ObjectId;
-    const Mixed     = _mongoose.Schema.Types.Mixed;
+    const ObjectId = _mongoose.Schema.Types.ObjectId;
+    const Mixed = _mongoose.Schema.Types.Mixed;
 
     /**
      * ----------------------------------------------------------------
@@ -100,11 +100,11 @@ module.exports = app => {
 
     ActionSchema.post('save', function(doc) {
         const self = this;
-        doc        = doc.toJSON();
+        doc = doc.toJSON();
 
         if(app.acl) {
-            const Apps    = _mongoose.model('System_Apps');
-            const Roles   = _mongoose.model('System_Roles');
+            const Apps = _mongoose.model('System_Apps');
+            const Roles = _mongoose.model('System_Roles');
             const Objects = _mongoose.model('System_Objects');
 
             const a = {};
@@ -122,16 +122,18 @@ module.exports = app => {
             };
 
             async.parallel(a, (err, results) => {
-                if(err) return _log.error(err);
-
-                if( ! results || ! results.role || ! results.object ) {
-                    return _log.info('role or object not found');
+                if(err) {
+                    return helper.log('error', err);
                 }
 
-                const role    = results.role;
-                const object  = results.object;
+                if( ! results || ! results.role || ! results.object ) {
+                    return debug('role or object not found');
+                }
+
+                const role = results.role;
+                const object = results.object;
                 const roleApp = role.ap.toString();
-                const objApp  = object.ap.toString();
+                const objApp = object.ap.toString();
 
                 // TODO:
                 // system objelerine erişim izni gereken uygulamalarda bu kontrol izin vermiyor
@@ -142,28 +144,28 @@ module.exports = app => {
 
                 Apps.findById(roleApp, (err, apps) => {
                     if( err || ! apps ) {
-                        return _log.info('app not found');
+                        return debug('app not found');
                     }
 
                     const roleName = `${apps.s}_${role.s}`;
-                    const objName  = object.s.replace('.', '_');
+                    const objName = object.s.replace('.', '_');
 
                     if(self._isNew) {
                         app.acl.allow(roleName, objName, doc.a);
 
                         if(doc.m.length) {
                             app.acl.allow(roleName, objName, doc.m);
-                            _log.info(`[acl:allow] ${roleName}:${objName}:${doc.m}`);
+                            debug(`[ACL ALLOW] ${roleName}:${objName}:${doc.m}`);
                         }
 
-                        return _log.info(`[acl:allow] ${roleName}:${objName}:${doc.a}`);
+                        return debug(`[ACL ALLOW] ${roleName}:${objName}:${doc.a}`);
                     }
 
                     // TODO:
                     // aşağıdaki actions ve master işlemlerinde _original data gerekiyor, yoksa işlem yapmıyoruz
 
                     if( ! self._original ) {
-                        return _log.info('action original data not found !!!');
+                        return debug('action original data not found !!!');
                     }
 
                     /**
@@ -171,24 +173,24 @@ module.exports = app => {
                      */
 
                     const _original = self._original.a;
-                    const _new      = doc.a;
+                    const _new = doc.a;
 
                     // new actions
                     let newActions = php.array_diff(_new, _original);
-                    newActions     = _.map(Object.keys(newActions), key => newActions[key]);
+                    newActions = _.map(Object.keys(newActions), key => newActions[key]);
 
                     if(newActions.length) {
                         app.acl.allow(roleName, objName, newActions);
-                        _log.info(`[acl:allow] ${roleName}:${objName}:${newActions}`);
+                        debug(`[ACL ALLOW] ${roleName}:${objName}:${newActions}`);
                     }
 
                     // old actions
                     let oldActions = php.array_diff(_original, _new);
-                    oldActions     = _.map(Object.keys(oldActions), key => oldActions[key]);
+                    oldActions = _.map(Object.keys(oldActions), key => oldActions[key]);
 
                     if(oldActions.length) {
                         app.acl.removeAllow(roleName, objName, oldActions);
-                        _log.info(`[acl:removeAllow] ${roleName}:${objName}:${oldActions}`);
+                        debug(`[ACL REMOVE ALLOW] ${roleName}:${objName}:${oldActions}`);
                     }
 
                     /**
@@ -200,20 +202,20 @@ module.exports = app => {
 
                     // new actions
                     let newMaster = php.array_diff(_newm, _orgm);
-                    newMaster     = _.map(Object.keys(newMaster), key => newMaster[key]);
+                    newMaster = _.map(Object.keys(newMaster), key => newMaster[key]);
 
                     if(newMaster.length) {
                         app.acl.allow(roleName, objName, newMaster);
-                        _log.info(`[acl:allow] ${roleName}:${objName}:${newMaster}`);
+                        debug(`[ACL ALLOW] ${roleName}:${objName}:${newMaster}`);
                     }
 
                     // old actions
                     let oldMaster = php.array_diff(_orgm, _newm);
-                    oldMaster     = _.map(Object.keys(oldMaster), key => oldMaster[key]);
+                    oldMaster = _.map(Object.keys(oldMaster), key => oldMaster[key]);
 
                     if(oldMaster.length) {
                         app.acl.removeAllow(roleName, objName, oldMaster);
-                        _log.info(`[acl:removeAllow] ${roleName}:${objName}:${oldMaster}`);
+                        debug(`[ACL REMOVE ALLOW] ${roleName}:${objName}:${oldMaster}`);
                     }
                 });
             });
@@ -228,11 +230,11 @@ module.exports = app => {
 
     ActionSchema.post('remove', function (doc) {
         const self = this;
-        doc        = doc.toJSON();
+        doc = doc.toJSON();
 
         if(app.acl) {
-            const Apps    = _mongoose.model('System_Apps');
-            const Roles   = _mongoose.model('System_Roles');
+            const Apps = _mongoose.model('System_Apps');
+            const Roles = _mongoose.model('System_Roles');
             const Objects = _mongoose.model('System_Objects');
 
             const a = {};
@@ -250,16 +252,18 @@ module.exports = app => {
             };
 
             async.parallel(a, (err, results) => {
-                if(err) return _log.error(err);
-
-                if( ! results || ! results.role || ! results.object ) {
-                    return _log.info('role or object not found');
+                if(err) {
+                    return helper.log('error', err);
                 }
 
-                const role    = results.role;
-                const object  = results.object;
+                if( ! results || ! results.role || ! results.object ) {
+                    return debug('role or object not found');
+                }
+
+                const role = results.role;
+                const object = results.object;
                 const roleApp = role.ap.toString();
-                const objApp  = object.ap.toString();
+                const objApp = object.ap.toString();
 
                 // TODO:
                 // system objelerine erişim izni gereken uygulamalarda bu kontrol izin vermiyor
@@ -270,18 +274,18 @@ module.exports = app => {
 
                 Apps.findById(roleApp, (err, apps) => {
                     if( err || ! apps ) {
-                        return _log.info('app not found');
+                        return debug('app not found');
                     }
 
                     const roleName = `${apps.s}_${role.s}`;
-                    const objName  = object.s.replace('.', '_');
+                    const objName = object.s.replace('.', '_');
 
                     app.acl.removeAllow(roleName, objName, doc.a);
-                    _log.info(`[acl:removeAllow] ${roleName}:${objName}:${doc.a}`);
+                    debug(`[ACL REMOVE ALLOW] ${roleName}:${objName}:${doc.a}`);
 
                     if(doc.m.length) {
                         app.acl.removeAllow(roleName, objName, doc.m);
-                        _log.info(`[acl:removeAllow] ${roleName}:${objName}:${doc.m}`);
+                        debug(`[ACL REMOVE ALLOW] ${roleName}:${objName}:${doc.m}`);
                     }
                 });
             });
