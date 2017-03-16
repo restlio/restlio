@@ -24,8 +24,8 @@
             "route/admin": {"key": "route/admin"},
             "resize": {"type": "function"},
             "handler": {"key": "system/handler/app"},
-            "sync": {"type": "function"},
             "docs": {"type": "function"},
+            "sync": {"type": "function"},
             "listen": {"type": "function"}
         }
     },

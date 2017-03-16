@@ -173,8 +173,7 @@ module.exports = app => {
         };
 
         async.parallel(a, (err, results) => {
-            // if(results) console.log(results);
-
+            debug('results %O', results);
             let render = true;
 
             if(err) log(err);

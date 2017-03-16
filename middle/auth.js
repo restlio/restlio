@@ -1,6 +1,7 @@
 const oauthserver = require('oauth2-server');
-const jwt         = require('jwt-simple');
-const _           = require('underscore');
+const jwt = require('jwt-simple');
+const _ = require('underscore');
+const debug = require('debug')('RESTLIO:MIDDLE:AUTH');
 
 function _guest(req, res, next) {
     req.__user = {id: 'guest'};
@@ -8,16 +9,18 @@ function _guest(req, res, next) {
 }
 
 function _accessToken(req, res, next) {
-    const _app    = req.app;
-    const _env    = _app.get('env');
-    const _resp   = _app.system.response.app;
-    const _conf   = _app.config[_env].api; // api config
+    const _app = req.app;
+    const _env = _app.get('env');
+    const _resp = _app.system.response.app;
+    const _conf = _app.config[_env].api; // api config
     const _middle = 'middle.auth';
     
     try {
         // TODO: querystring ile de çalışabilsin
+        debug('access token %s', req.headers['x-access-token']);
         const decoded = jwt.decode(req.headers['x-access-token'], _conf.token.secret);
-
+        debug('decoded access token %o', decoded);
+        
         if ( decoded.exp <= Date.now() ) {
             return next( _resp.Unauthorized({
                 middleware: _middle,

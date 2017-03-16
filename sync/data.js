@@ -382,6 +382,11 @@ module.exports = (app, loadCb) => {
 
             if(dot.get(_c, 'sync.data.docs')) {
                 series.docs = cb => {
+                    if( ! app.lib.apidocs ) {
+                        debug('lib apidocs not found!');
+                        return cb();
+                    }
+
                     new app.lib.apidocs.index(app, cb);
                 };
             }
