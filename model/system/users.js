@@ -157,9 +157,15 @@ module.exports = app => {
             });
         }
 
+        // manuel save çalıştırınca original bulunmuyor
+        if(!self._original) {
+            debug('self._original not found!');
+            self._original = {};
+        }
+
         let roles = [];
-        doc       = doc.toJSON();
-        const id  = doc._id.toString();
+        doc = doc.toJSON();
+        const id = doc._id.toString();
 
         // mevcut kaydedilen roller
         if(doc.ro.length) {
@@ -242,7 +248,7 @@ module.exports = app => {
 
                             if(doc.ro) {
                                 app.acl.addUserRoles(doc._id.toString(), doc.ro);
-                                return debug(`[ACL ADD USER ROLES] ${doc._id} %o`, doc.ro);
+                                return debug(`[NEW USER ACL ADD ROLES] ${doc._id} %o`, doc.ro);
                             }
                         }
 

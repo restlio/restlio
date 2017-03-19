@@ -22,6 +22,7 @@ module.exports = app => {
         l  : {type: String, alias: 'level'},
         n  : {type: String, alias: 'namestr'}, // api
         c  : {type: String, alias: 'code'}, // api
+        ms : {type: String, alias: 'msgstr'},
         m  : {type: Mixed, alias: 'message'},
         md : {type: String, alias: 'middleware'}, // api
         e  : [{type: Mixed, alias: 'errors'}], // api
@@ -45,6 +46,7 @@ module.exports = app => {
     Schema.t.settings = {label: 'Type'};
     Schema.s.settings = {label: 'Source'};
     Schema.m.settings = {label: 'Message'};
+    Schema.ms.settings = {label: 'Message Str'};
     Schema.st.settings = {label: 'Stack'};
 
     /**
