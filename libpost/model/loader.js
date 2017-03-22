@@ -48,6 +48,10 @@ class LibpostModelLoader {
 
             if(options.Structure) {
                 Schema.structure = schema;
+
+                if(options.StructureData) {
+                    Schema.structure._data = options.StructureData;
+                }
             }
 
             // extend inspector with options
