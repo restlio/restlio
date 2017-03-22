@@ -45,7 +45,10 @@ class LibpostModelLoader {
             // create inspector
             const Inspector = new this._inspector(schema, alias).init();
             Schema.inspector = Inspector;
-            // Schema.structure = schema;
+
+            if(options.Structure) {
+                Schema.structure = schema;
+            }
 
             // extend inspector with options
             extend(Schema.inspector, options);

@@ -278,6 +278,8 @@ module.exports = (app, loadCb) => {
                             const role = results[`role_${key}.${act_key}`]._id.toString();
 
                             _.each(act_value, (action, object) => {
+                                // console.log(`object_${object}`);
+                                // console.log('---------------------------------------------');
                                 object = results[`object_${object}`]._id.toString();
 
                                 // collect master actions
