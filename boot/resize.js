@@ -2,7 +2,6 @@ const mime = require('mime');
 const dot = require('dotty');
 const fs = require('fs');
 const debug = require('debug');
-const ir = require('image-resizer-tmp');
 
 module.exports = app => {
     const env = app.get('env');
@@ -41,6 +40,9 @@ module.exports = app => {
             setEnv('S3_BUCKET', conf.bucket);
         }
 
+        // en başta require yapınca process env değişkenlerini görmüyor,
+        // burada require yapıyoruz
+        const ir = require('image-resizer-tmp'); // eslint-disable-line global-require
         const Img = ir.img;
         const streams = ir.streams;
 
